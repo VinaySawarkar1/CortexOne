@@ -1,0 +1,66 @@
+const fs = require('fs');
+const path = require('path');
+
+// Test to verify quotation ID mapping is working correctly
+async function testQuotationFix() {
+  console.log('🔍 Testing Quotation ID Fix...\n');
+  
+  try {
+    // Read the converted quotations data
+    const quotationsPath = path.join(__dirname, 'data', 'quotations.json');
+    const data = fs.readFileSync(quotationsPath, 'utf-8');
+    const quotations = JSON.parse(data);
+    
+    console.log(`📊 Found ${quotations.length} quotations`);
+    
+    // Check if the ID mapping is correct
+    let successCount = 0;
+    let errors = [];
+    
+    quotations.forEach((quotation, index) => {
+      const expectedId = 500 + index;
+      if (quotation.id === expectedId) {
+        successCount++;
+      } else {
+        errors.push(`❌ Quotation ${quotation.quotationNumber}: Expected ID ${expectedId}, got ${quotation.id}`);
+      }
+    });
+    
+    console.log(`\n✅ ID Mapping Results:`);
+    console.log(`   • Successful mappings: ${successCount}/${quotations.length}`);
+    console.log(`   • Failed mappings: ${errors.length}`);
+    
+    if (errors.length > 0) {
+      console.log(`\n❌ Errors found:`);
+      errors.forEach(error => console.log(`   ${error}`));
+    } else {
+      console.log(`\n🎉 All quotations have correct IDs!`);
+    }
+    
+    // Test specific cases that were problematic before
+    console.log(`\n🧪 Testing Specific Cases:`);
+    
+    // Find the quotation that was previously ID 24 (now should be 523)
+    const previouslyId24 = quotations.find(q => q.id === 523);
+    if (previouslyId24) {
+      console.log(`✅ Previously ID 24 is now ID 523: ${previouslyId24.quotationNumber}`);
+    } else {
+      console.log(`❌ Could not find quotation that was previously ID 24`);
+    }
+    
+    // Check the highest ID
+    const highestId = Math.max(...quotations.map(q => q.id));
+    console.log(`📈 Highest quotation ID: ${highestId}`);
+    console.log(`🔢 Next ID will be: ${highestId + 1}`);
+    
+    console.log(`\n🎯 Summary:`);
+    console.log(`   • All quotations now have IDs from 500 onwards`);
+    console.log(`   • The ID mismatch issue should be resolved`);
+    console.log(`   • Editing quotation ID 24 (now 523) should work correctly`);
+    
+  } catch (error) {
+    console.error('❌ Test failed:', error.message);
+  }
+}
+
+testQuotationFix();

@@ -154,7 +154,7 @@ export default function SalesTargetsPage() {
 
   return (
     <Layout>
-      <div className="py-6 px-4 sm:px-6 lg:px-8">
+      <div className="page-body">
         <PageHeader
           title="Sales Targets"
           subtitle="Manage your sales targets and performance"

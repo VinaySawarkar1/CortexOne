@@ -1,232 +1,123 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import {
-  Home,
-  Users,
-  Package,
-  ShoppingCart,
-  FileText,
-  BarChart3,
-  Settings,
-  UserPlus,
-  Target,
-  Building2,
-  Receipt,
-  Factory,
-  ClipboardList,
-  HelpCircle,
-  CreditCard,
-  Truck,
-  CheckCircle2,
-} from "lucide-react";
+import { LayoutGrid, ChevronRight } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-
-const crmItems = [
-  {
-    title: "Dashboard",
-    href: "/",
-    icon: Home,
-  },
-  {
-    title: "Leads",
-    href: "/leads",
-    icon: UserPlus,
-  },
-  {
-    title: "Customers",
-    href: "/customers",
-    icon: Building2,
-  },
-  {
-    title: "Quotations",
-    href: "/quotations",
-    icon: FileText,
-  },
-  {
-    title: "Orders",
-    href: "/orders",
-    icon: ShoppingCart,
-  },
-  {
-    title: "Invoices",
-    href: "/invoices",
-    icon: Receipt,
-  },
-  {
-    title: "Payments",
-    href: "/payments",
-    icon: CreditCard,
-  },
-  {
-    title: "Sales Targets",
-    href: "/sales-targets",
-    icon: Target,
-  },
-  {
-    title: "Reports",
-    href: "/reports",
-    icon: BarChart3,
-  },
-];
-
-const erpItems = [
-  {
-    title: "Inventory",
-    href: "/inventory",
-    icon: Package,
-  },
-  {
-    title: "Manufacturing",
-    href: "/manufacturing",
-    icon: Factory,
-  },
-  {
-    title: "Purchase Orders",
-    href: "/purchase-orders",
-    icon: Truck,
-  },
-  {
-    title: "Tasks",
-    href: "/tasks",
-    icon: ClipboardList,
-  },
-  {
-    title: "Employee Activities",
-    href: "/employee-activities",
-    icon: Users,
-  },
-  {
-    title: "Support Tickets",
-    href: "/support-tickets",
-    icon: HelpCircle,
-  },
-  {
-    title: "Settings",
-    href: "/settings",
-    icon: Settings,
-  },
-  {
-    title: "Users",
-    href: "/users",
-    icon: Users,
-  },
-  {
-    title: "Approvals",
-    href: "/approvals",
-    icon: CheckCircle2,
-  },
-];
+import { useQuery } from "@tanstack/react-query";
+import { getModuleForPath, accessibleItems, MODULES } from "@/lib/modules";
+import { getQueryFn } from "@/lib/queryClient";
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
+
+function useBadgeCounts() {
+  const { data: leads = [] } = useQuery<any[]>({ queryKey: ["/api/leads"], queryFn: getQueryFn({ on401: "returnNull" }), staleTime: 30000 });
+  const { data: orders = [] } = useQuery<any[]>({ queryKey: ["/api/orders"], queryFn: getQueryFn({ on401: "returnNull" }), staleTime: 30000 });
+  const { data: invoices = [] } = useQuery<any[]>({ queryKey: ["/api/invoices"], queryFn: getQueryFn({ on401: "returnNull" }), staleTime: 30000 });
+  const { data: tasks = [] } = useQuery<any[]>({ queryKey: ["/api/tasks"], queryFn: getQueryFn({ on401: "returnNull" }), staleTime: 30000 });
+  const { data: tickets = [] } = useQuery<any[]>({ queryKey: ["/api/support-tickets"], queryFn: getQueryFn({ on401: "returnNull" }), staleTime: 30000 });
+  const { data: inventory = [] } = useQuery<any[]>({ queryKey: ["/api/inventory"], queryFn: getQueryFn({ on401: "returnNull" }), staleTime: 30000 });
+  return {
+    "/leads": leads.filter((l: any) => l.status === "new").length || 0,
+    "/orders": orders.filter((o: any) => o.status === "draft").length || 0,
+    "/invoices": invoices.filter((i: any) => i.status !== "paid").length || 0,
+    "/tasks": tasks.filter((t: any) => t.status === "pending" || t.status === "todo").length || 0,
+    "/support-tickets": tickets.filter((t: any) => t.status === "open").length || 0,
+    "/inventory": inventory.filter((i: any) => (i.quantity || 0) < 10).length || 0,
+  };
+}
 
 export default function Sidebar({ className }: SidebarProps) {
   const [location] = useLocation();
   const { user } = useAuth();
+  const badges = useBadgeCounts();
 
-  const allow = (title: string) => {
-    if (!user) return false;
-    // Superuser sees everything
-    if (user.role === 'superuser') return true;
-    // Approvals page is superuser only
-    if (title === 'Approvals') return false;
-    if (user.role === 'admin') return true;
-    // If user has granular permissions, check them first
-    const perms = (user as any).permissions as string[] | undefined;
-    if (Array.isArray(perms) && perms.length > 0) {
-      return perms.includes(title.toLowerCase());
-    }
-    // Fallback to role-based buckets
-    const salesOnly = ["Dashboard","Leads","Customers","Quotations","Orders","Invoices","Payments","Reports"];
-    if (user.role === 'sales') return salesOnly.includes(title);
-    return true;
-  };
+  const current = getModuleForPath(location) || MODULES.find((m) => accessibleItems(user, m).length > 0);
+  const items = current ? accessibleItems(user, current) : [];
+  const ModuleIcon = current?.icon;
 
   return (
-    <div className={cn("h-screen flex flex-col bg-white/90 backdrop-blur-md", className)}>
-      {/* Logo */}
-      <div className="p-5 border-b border-gray-100/50 bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 flex-shrink-0">
-        <div className="flex items-center gap-3 group cursor-pointer">
-          <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
-            <span className="text-white font-bold text-sm">C</span>
+    <div className={cn("h-screen flex flex-col", className)}
+      style={{ background: "linear-gradient(180deg,#0f172a 0%,#1e1b4b 60%,#0f172a 100%)" }}>
+
+      {/* Module Header */}
+      <div className="p-4 border-b border-white/10 flex-shrink-0">
+        {current && ModuleIcon ? (
+          <div className="flex items-center gap-3">
+            <div className={cn("w-10 h-10 rounded-xl bg-gradient-to-br text-white flex items-center justify-center shadow-lg shadow-black/40 ring-1 ring-white/20", current.color)}>
+              <ModuleIcon className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-sm font-extrabold text-white truncate">{current.name}</h1>
+              <p className="text-[10px] text-white/40 font-medium">{current.tagline}</p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <h1 className="text-base font-bold text-gray-900 truncate bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              BizSuite
-            </h1>
-            <p className="text-[11px] text-gray-500 font-medium">Business Suite</p>
+        ) : (
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg ring-1 ring-white/20">
+              <span className="text-white font-extrabold text-sm">B</span>
+            </div>
+            <h1 className="text-sm font-extrabold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">BizSuite</h1>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Navigation - Fixed height with scroll */}
-      <div className="flex-1 py-6 overflow-y-auto overflow-x-hidden scrollbar-sidebar min-h-0">
-        {/* CRM Section */}
-        <div className="mb-8">
-          <div className="px-5 mb-3">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Customer Relationship
-            </h3>
-          </div>
-          <div className="space-y-1">
-            {crmItems.filter(i => allow(i.title)).map((item) => (
-              <Link key={item.href} href={item.href}>
-                <Button
-                  variant={location === item.href ? "default" : "ghost"}
-                  className={cn(
-                    "w-full justify-start h-10 px-5 rounded-lg border-l-4 transition-all duration-300 group",
-                    location === item.href 
-                      ? "bg-gradient-to-r from-blue-50 to-purple-50 border-blue-600 text-blue-700 shadow-md hover:shadow-lg hover:from-blue-100 hover:to-purple-100" 
-                      : "border-transparent text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50/30 hover:text-gray-900 hover:border-gray-300 hover:shadow-sm"
-                  )}
-                >
-                  <item.icon className={cn(
-                    "mr-3 h-4 w-4 transition-transform duration-300",
-                    location === item.href ? "scale-110" : "group-hover:scale-110"
-                  )} />
-                  <span className="font-medium">{item.title}</span>
-                </Button>
-              </Link>
-            ))}
-          </div>
-        </div>
+      {/* Apps Launcher */}
+      <div className="px-3 pt-3 flex-shrink-0">
+        <Link href="/apps">
+          <Button variant="ghost" size="sm"
+            className="w-full justify-start h-9 gap-2 text-white/70 hover:text-white hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl transition-all duration-200">
+            <LayoutGrid className="h-3.5 w-3.5" />
+            <span className="text-xs font-semibold">All Applications</span>
+            <ChevronRight className="h-3 w-3 ml-auto opacity-50" />
+          </Button>
+        </Link>
+      </div>
 
-        {/* ERP Section */}
-        <div className="mb-8">
-          <div className="px-5 mb-3">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Enterprise Resource
-            </h3>
+      {/* Navigation Items */}
+      <div className="flex-1 py-3 overflow-y-auto overflow-x-hidden scrollbar-sidebar min-h-0">
+        {items.length > 0 && (
+          <div className="px-3 mb-2">
+            <p className="text-[9px] font-bold text-white/30 uppercase tracking-widest px-2">{current?.name}</p>
           </div>
-          <div className="space-y-1">
-            {erpItems.filter(i => allow(i.title)).map((item) => (
+        )}
+        <div className="space-y-0.5 px-2">
+          {items.map((item) => {
+            const Icon = item.icon;
+            const active = location === item.href || location.startsWith(item.href + "/");
+            const badge = badges[item.href as keyof typeof badges] || 0;
+            return (
               <Link key={item.href} href={item.href}>
-                <Button
-                  variant={location === item.href ? "default" : "ghost"}
-                  className={cn(
-                    "w-full justify-start h-10 px-5 rounded-lg border-l-4 transition-all duration-300 group",
-                    location === item.href 
-                      ? "bg-gradient-to-r from-blue-50 to-purple-50 border-blue-600 text-blue-700 shadow-md hover:shadow-lg hover:from-blue-100 hover:to-purple-100" 
-                      : "border-transparent text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50/30 hover:text-gray-900 hover:border-gray-300 hover:shadow-sm"
+                <div className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 group relative",
+                  active
+                    ? "bg-gradient-to-r from-indigo-600/80 to-purple-600/80 text-white shadow-lg shadow-indigo-900/50 ring-1 ring-indigo-500/50"
+                    : "text-white/60 hover:text-white hover:bg-white/10"
+                )}>
+                  {/* Active indicator */}
+                  {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-indigo-400 rounded-r-full" />}
+                  <Icon className={cn("h-4 w-4 flex-shrink-0 transition-transform duration-200", active ? "text-white" : "group-hover:scale-110")} />
+                  <span className={cn("text-xs font-semibold flex-1 truncate", active ? "text-white" : "")}>{item.title}</span>
+                  {badge > 0 && (
+                    <span className={cn(
+                      "text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0",
+                      active ? "bg-white/20 text-white" : "bg-indigo-500/30 text-indigo-300"
+                    )}>{badge > 99 ? "99+" : badge}</span>
                   )}
-                >
-                  <item.icon className={cn(
-                    "mr-3 h-4 w-4 transition-transform duration-300",
-                    location === item.href ? "scale-110" : "group-hover:scale-110"
-                  )} />
-                  <span className="font-medium">{item.title}</span>
-                </Button>
+                </div>
               </Link>
-            ))}
-          </div>
+            );
+          })}
+          {items.length === 0 && (
+            <p className="px-3 py-4 text-xs text-white/30 text-center">No accessible pages in this module.</p>
+          )}
         </div>
       </div>
 
       {/* Footer */}
-      <div className="p-5 border-t border-gray-100/50 bg-gradient-to-t from-white to-blue-50/20 flex-shrink-0">
-        <div className="text-xs text-gray-500 text-center font-medium">
-          © 2025 <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent font-bold">BizSuite</span>
-        </div>
+      <div className="p-4 border-t border-white/10 flex-shrink-0">
+        <p className="text-[10px] text-white/20 text-center font-medium">
+          © {new Date().getFullYear()} <span className="text-white/40">BizSuite</span>
+        </p>
       </div>
     </div>
   );

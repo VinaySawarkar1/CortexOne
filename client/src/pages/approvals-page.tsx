@@ -42,10 +42,22 @@ export default function ApprovalsPage() {
     onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" })
   });
 
+  const rejectCompany = useMutation({
+    mutationFn: async (companyId: number) => {
+      const res = await apiRequest("DELETE", `/api/companies/${companyId}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/pending-approvals"] });
+      toast({ title: "Company Rejected", description: "Company and pending users have been removed." });
+    },
+    onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" })
+  });
+
   if (user?.role !== 'superuser') {
     return (
       <Layout>
-        <div className="py-6 px-4 sm:px-6 lg:px-8">
+        <div className="page-body">
           <Card>
             <CardContent className="pt-6">
               <p className="text-center text-gray-500">Access denied. Superuser only.</p>
@@ -68,7 +80,7 @@ export default function ApprovalsPage() {
 
   return (
     <Layout>
-      <div className="py-6 px-4 sm:px-6 lg:px-8">
+      <div className="page-body">
         <div className="flex justify-between items-center mb-4">
           <PageHeader 
             title="Pending Approvals" 
@@ -130,14 +142,27 @@ export default function ApprovalsPage() {
                               <p className="text-sm text-gray-600">{adminUser.email}</p>
                             </div>
                           )}
-                          <Button
-                            onClick={() => approveCompany.mutate(company.id)}
-                            disabled={approveCompany.isPending}
-                            className="w-full sm:w-auto"
-                          >
-                            <CheckCircle2 className="h-4 w-4 mr-2" />
-                            Approve Company
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={() => approveCompany.mutate(company.id)}
+                              disabled={approveCompany.isPending}
+                            >
+                              <CheckCircle2 className="h-4 w-4 mr-2" />
+                              Approve
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              onClick={() => {
+                                if (window.confirm(`Reject and delete company "${company.name}"? This cannot be undone.`)) {
+                                  rejectCompany.mutate(company.id);
+                                }
+                              }}
+                              disabled={rejectCompany.isPending}
+                            >
+                              <XCircle className="h-4 w-4 mr-2" />
+                              Reject
+                            </Button>
+                          </div>
                         </div>
                       );
                     })}

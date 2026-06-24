@@ -408,8 +408,8 @@ export function quotationTemplate(data: DocBase & {
           <td>
             <div class="addr-title">Billing Address</div>
             <div>
-              ${data.customer?.company ? `<strong>${data.customer.company}</strong><br/>` : ""}
-              ${data.customer?.name ? `${data.customer.contactPersonTitle || ""} ${data.customer.name}<br/>` : ""}
+              ${ (data.customer?.company || data.customer?.contactPerson || data.customer?.name) ? `<strong>${data.customer?.company || data.customer?.contactPerson || data.customer?.name}</strong><br/>` : "-" }
+              ${(!data.customer?.company && data.customer?.name && data.customer?.contactPerson) ? `${data.customer.contactPersonTitle || ""} ${data.customer.name}<br/>` : (data.customer?.company ? (data.customer?.name ? `${data.customer.contactPersonTitle || ""} ${data.customer.name}<br/>` : "") : "")}
               ${data.customer?.address || ""}<br/>
               ${data.customer?.city || ""}<br/>
               ${config.gstin && data.customer?.gstin ? `GSTIN: ${data.customer.gstin}<br/>` : ""}
@@ -419,8 +419,8 @@ export function quotationTemplate(data: DocBase & {
           <td>
             <div class="addr-title">Shipping Address</div>
             <div>
-              ${data.customer?.company ? `<strong>${data.customer.company}</strong><br/>` : ""}
-              ${data.customer?.name ? `${data.customer.contactPersonTitle || ""} ${data.customer.name}<br/>` : ""}
+              ${ (data.customer?.company || data.customer?.contactPerson || data.customer?.name) ? `<strong>${data.customer?.company || data.customer?.contactPerson || data.customer?.name}</strong><br/>` : "-" }
+              ${(!data.customer?.company && data.customer?.name && data.customer?.contactPerson) ? `${data.customer.contactPersonTitle || ""} ${data.customer.name}<br/>` : (data.customer?.company ? (data.customer?.name ? `${data.customer.contactPersonTitle || ""} ${data.customer.name}<br/>` : "") : "")}
               ${data.customer?.address || ""}<br/>
               ${data.customer?.city || ""}<br/>
               ${config.gstin && data.customer?.gstin ? `GSTIN: ${data.customer.gstin}<br/>` : ""}

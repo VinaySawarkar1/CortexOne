@@ -1,0 +1,108 @@
+Browserslist: browsers data (caniuse-lite) is 20 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+TypeError: getStorage(...).getCrmStages is not a function
+    at <anonymous> (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\server\routes.ts:1181:22)
+    at Layer.handle [as handle_request] (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\layer.js:95:5)
+    at next (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\layer.js:95:5)
+    at E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\index.js:284:15
+    at Function.process_params (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\index.js:346:12)
+    at next (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\index.js:280:10)
+    at strategy.pass (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\passport\lib\middleware\authenticate.js:355:9)
+    at E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\passport\lib\strategies\session.js:120:12
+    at pass (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\passport\lib\authenticator.js:352:31)
+    at deserialized (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\passport\lib\authenticator.js:364:7)
+    at <anonymous> (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\server\auth.ts:107:7)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+TypeError: getStorage(...).getCrmStages is not a function
+    at <anonymous> (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\server\routes.ts:1181:22)
+    at Layer.handle [as handle_request] (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\layer.js:95:5)
+    at next (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\layer.js:95:5)
+    at E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\index.js:284:15
+    at Function.process_params (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\index.js:346:12)
+    at next (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\index.js:280:10)
+    at strategy.pass (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\passport\lib\middleware\authenticate.js:355:9)
+    at E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\passport\lib\strategies\session.js:120:12
+    at pass (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\passport\lib\authenticator.js:352:31)
+    at deserialized (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\passport\lib\authenticator.js:364:7)
+    at <anonymous> (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\server\auth.ts:107:7)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+TypeError: getStorage(...).getCrmStages is not a function
+    at <anonymous> (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\server\routes.ts:1181:22)
+    at Layer.handle [as handle_request] (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\layer.js:95:5)
+    at next (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\layer.js:95:5)
+    at E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\index.js:284:15
+    at Function.process_params (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\index.js:346:12)
+    at next (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\index.js:280:10)
+    at strategy.pass (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\passport\lib\middleware\authenticate.js:355:9)
+    at E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\passport\lib\strategies\session.js:120:12
+    at pass (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\passport\lib\authenticator.js:352:31)
+    at deserialized (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\passport\lib\authenticator.js:364:7)
+    at <anonymous> (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\server\auth.ts:107:7)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+TypeError: getStorage(...).getCrmStages is not a function
+    at <anonymous> (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\server\routes.ts:1181:22)
+    at Layer.handle [as handle_request] (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\layer.js:95:5)
+    at next (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\layer.js:95:5)
+    at E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\index.js:284:15
+    at Function.process_params (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\index.js:346:12)
+    at next (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\index.js:280:10)
+    at strategy.pass (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\passport\lib\middleware\authenticate.js:355:9)
+    at E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\passport\lib\strategies\session.js:120:12
+    at pass (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\passport\lib\authenticator.js:352:31)
+    at deserialized (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\passport\lib\authenticator.js:364:7)
+    at <anonymous> (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\server\auth.ts:107:7)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+TypeError: getStorage(...).getCrmStages is not a function
+    at <anonymous> (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\server\routes.ts:1181:22)
+    at Layer.handle [as handle_request] (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\layer.js:95:5)
+    at next (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\layer.js:95:5)
+    at E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\index.js:284:15
+    at Function.process_params (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\index.js:346:12)
+    at next (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\index.js:280:10)
+    at strategy.pass (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\passport\lib\middleware\authenticate.js:355:9)
+    at E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\passport\lib\strategies\session.js:120:12
+    at pass (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\passport\lib\authenticator.js:352:31)
+    at deserialized (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\passport\lib\authenticator.js:364:7)
+    at <anonymous> (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\server\auth.ts:107:7)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+TypeError: getStorage(...).getCrmStages is not a function
+    at <anonymous> (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\server\routes.ts:1181:22)
+    at Layer.handle [as handle_request] (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\layer.js:95:5)
+    at next (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\layer.js:95:5)
+    at E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\index.js:284:15
+    at Function.process_params (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\index.js:346:12)
+    at next (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\index.js:280:10)
+    at strategy.pass (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\passport\lib\middleware\authenticate.js:355:9)
+    at E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\passport\lib\strategies\session.js:120:12
+    at pass (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\passport\lib\authenticator.js:352:31)
+    at deserialized (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\passport\lib\authenticator.js:364:7)
+    at <anonymous> (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\server\auth.ts:107:7)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+TypeError: getStorage(...).getCrmStages is not a function
+    at <anonymous> (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\server\routes.ts:1181:22)
+    at Layer.handle [as handle_request] (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\layer.js:95:5)
+    at next (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\layer.js:95:5)
+    at E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\index.js:284:15
+    at Function.process_params (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\index.js:346:12)
+    at next (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\express\lib\router\index.js:280:10)
+    at strategy.pass (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\passport\lib\middleware\authenticate.js:355:9)
+    at E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\passport\lib\strategies\session.js:120:12
+    at pass (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\passport\lib\authenticator.js:352:31)
+    at deserialized (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\node_modules\passport\lib\authenticator.js:364:7)
+    at <anonymous> (E:\Cortex Ai\Product Code\Reckonix Management system\Reckonix Management system\server\auth.ts:107:7)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)

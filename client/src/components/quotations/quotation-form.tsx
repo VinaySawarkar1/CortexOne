@@ -622,6 +622,31 @@ export default function QuotationForm({
     }
   }, [defaultValues, mode, customers, leads, setValue]);
 
+  // Auto-generate quotation number for new quotations
+  useEffect(() => {
+    if (mode === "create" && !defaultValues?.quotationNumber) {
+      const generateQuotationNumber = async () => {
+        try {
+          const response = await fetch('/api/quotations/generate-number', {
+            method: 'POST',
+            credentials: 'include'
+          });
+          if (response.ok) {
+            const data = await response.json();
+            console.log('🔢 Generated new quotation number:', data.quotationNumber);
+            setValue("quotationNumber", data.quotationNumber);
+          }
+        } catch (error) {
+          console.error('Failed to generate quotation number:', error);
+          // Fallback: use timestamp-based ID
+          const fallbackId = `RX-Q${Date.now()}`;
+          setValue("quotationNumber", fallbackId);
+        }
+      };
+      generateQuotationNumber();
+    }
+  }, [mode, defaultValues, setValue]);
+
   // Populate form when defaultValues change (for create mode, e.g., coming from a Lead)
   useEffect(() => {
     if (!defaultValues || mode === "edit") return;

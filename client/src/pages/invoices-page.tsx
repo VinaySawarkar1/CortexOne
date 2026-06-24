@@ -129,122 +129,59 @@ export default function InvoicesPage() {
 
   return (
     <Layout>
-      <div className="py-6 px-4 sm:px-6 lg:px-8">
-        <PageHeader
-          title="Invoices"
-          subtitle="Manage your sales invoices"
-        />
-
-        {/* Top Bar with Stats and Actions */}
-        <div className="mb-6 bg-white p-4 rounded-lg border">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div className="flex items-center gap-6">
-              <div className="text-center">
-                <div className="text-sm font-medium text-gray-500">Count</div>
-                <div className="text-2xl font-bold">{totalInvoices}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-sm font-medium text-gray-500">Pre-Tax</div>
-                <div className="text-2xl font-bold text-blue-600">₹{preTaxAmount.toLocaleString()}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-sm font-medium text-gray-500">Total</div>
-                <div className="text-2xl font-bold text-green-600">₹{totalAmount.toLocaleString()}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-sm font-medium text-gray-500">Paid</div>
-                <div className="text-2xl font-bold text-purple-600">₹{paidAmount.toLocaleString()}</div>
-              </div>
+      <PageHeader title="Invoices" subtitle="Manage sales invoices and proformas"
+        actions={
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-lg overflow-hidden border border-gray-200">
+              {["invoices","proforma"].map(tab => (
+                <button key={tab} onClick={() => setActiveTab(tab)}
+                  className={`px-3 py-1.5 text-xs font-semibold transition-colors capitalize ${activeTab === tab ? "bg-indigo-600 text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}>
+                  {tab === "proforma" ? "Proforma" : "Invoices"}
+                </button>
+              ))}
             </div>
-            
-            <div className="flex items-center gap-4">
-              <Input
-                placeholder="Search invoices..."
-                value={searchTerm}
-                onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
-                className="w-64"
-              />
-              <Button onClick={handleAddNew} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
-                <Plus className="h-4 w-4" />
-                Create Invoice
-              </Button>
-            </div>
+            <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+              <SelectTrigger className="w-28 h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="sent">Sent</SelectItem>
+                <SelectItem value="paid">Paid</SelectItem>
+                <SelectItem value="overdue">Overdue</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button size="sm" onClick={handleAddNew} className="h-8 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-xs font-semibold">
+              <Plus className="h-3.5 w-3.5 mr-1.5" />New Invoice
+            </Button>
           </div>
+        }
+      />
+
+      <div className="p-6 space-y-4">
+        {/* KPI Row */}
+        <div className="grid grid-cols-4 gap-3">
+          {[
+            { label: "Total Invoices", value: totalInvoices, color: "#1e293b" },
+            { label: "Pre-Tax Total", value: `₹${preTaxAmount.toLocaleString("en-IN")}`, color: "#6366f1" },
+            { label: "Total w/ Tax", value: `₹${totalAmount.toLocaleString("en-IN")}`, color: "#059669" },
+            { label: "Amount Paid", value: `₹${paidAmount.toLocaleString("en-IN")}`, color: "#7c3aed" },
+          ].map((s, i) => (
+            <div key={i} className="stat-card">
+              <div className="stat-card-value" style={{ color: s.color }}>{s.value}</div>
+              <div className="stat-card-label">{s.label}</div>
+            </div>
+          ))}
         </div>
 
-        {/* Filter Tabs */}
-        <div className="mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
-              <button
-                onClick={() => setActiveTab("invoices")}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === "invoices"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                Invoices
-              </button>
-              <button
-                onClick={() => setActiveTab("proforma")}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === "proforma"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                Proforma Invoices
-              </button>
-            </nav>
+        {/* Search + filter row */}
+        <div className="flex items-center gap-3">
+          <div className="relative max-w-xs">
+            <Input placeholder="Search invoices..." value={searchTerm}
+              onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
+              className="h-8 text-xs pl-3 w-60" />
           </div>
-        </div>
-
-        {/* Filter Controls */}
-        <div className="mb-6 flex flex-wrap gap-4">
-          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-            <SelectTrigger className="w-32">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="sent">Sent</SelectItem>
-              <SelectItem value="paid">Paid</SelectItem>
-              <SelectItem value="overdue">Overdue</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Select defaultValue="2025-2026">
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Fin Year" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="2025-2026">2025-2026</SelectItem>
-              <SelectItem value="2024-2025">2024-2025</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Select defaultValue="all">
-            <SelectTrigger className="w-32">
-              <SelectValue placeholder="Branch" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Branches</SelectItem>
-              <SelectItem value="maharashtra">Maharashtra</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Select defaultValue="all">
-            <SelectTrigger className="w-32">
-              <SelectValue placeholder="Executive" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Executives</SelectItem>
-              <SelectItem value="vinay">Vinay Sawarkar</SelectItem>
-            </SelectContent>
-          </Select>
+          <p className="text-xs text-gray-400 ml-auto">{filteredInvoices.length} result{filteredInvoices.length !== 1 ? "s" : ""}</p>
         </div>
 
         {/* Invoice Table */}
@@ -255,14 +192,15 @@ export default function InvoicesPage() {
           onDelete={handleDelete}
           onGeneratePDF={handleGeneratePDF}
           onPrint={handlePrint}
+          onRecordPayment={(inv) => setLocation(`/payments?invoiceId=${inv.id}`)}
         />
 
-        {filteredInvoices.length > 0 && (
-          <div className="flex items-center justify-between mt-4">
-            <div className="text-sm text-gray-600">Showing {(page-1)*pageSize + 1} - {Math.min(page*pageSize, filteredInvoices.length)} of {filteredInvoices.length}</div>
-            <div className="flex gap-2">
-              <Button variant="outline" disabled={page === 1} onClick={() => setPage(p => Math.max(1, p-1))}>Prev</Button>
-              <Button variant="outline" disabled={page*pageSize >= filteredInvoices.length} onClick={() => setPage(p => p+1)}>Next</Button>
+        {filteredInvoices.length > pageSize && (
+          <div className="flex items-center justify-between pt-1">
+            <div className="text-xs text-gray-400">Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filteredInvoices.length)} of {filteredInvoices.length}</div>
+            <div className="flex gap-1.5">
+              <Button variant="outline" size="sm" className="h-7 text-xs" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Prev</Button>
+              <Button variant="outline" size="sm" className="h-7 text-xs" disabled={page * pageSize >= filteredInvoices.length} onClick={() => setPage(p => p + 1)}>Next</Button>
             </div>
           </div>
         )}

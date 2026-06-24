@@ -7,6 +7,9 @@ import {
   leadDiscussions, type LeadDiscussion, type InsertLeadDiscussion,
   leadCategories, type LeadCategory, type InsertLeadCategory,
   leadSources, type LeadSource, type InsertLeadSource,
+  crmStages, type CrmStage, type InsertCrmStage,
+  crmLostReasons, type CrmLostReason, type InsertCrmLostReason,
+  crmActivities, type CrmActivity, type InsertCrmActivity,
   quotations, type Quotation, type InsertQuotation,
   orders, type Order, type InsertOrder,
   invoices, type Invoice, type InsertInvoice,
@@ -21,7 +24,21 @@ import {
   supportTickets, type SupportTicket, type InsertSupportTicket,
   contracts, type Contract, type InsertContract,
   companySettings, type CompanySettings, type InsertCompanySettings,
-  proformas, type Proforma, type InsertProforma
+  proformas, type Proforma, type InsertProforma,
+  departments, type Department, type InsertDepartment,
+  designations, type Designation, type InsertDesignation,
+  employees, type Employee, type InsertEmployee,
+  attendance, type Attendance, type InsertAttendance,
+  leaveTypes, type LeaveType, type InsertLeaveType,
+  leaveRequests, type LeaveRequest, type InsertLeaveRequest,
+  payslips, type Payslip, type InsertPayslip,
+  warehouses, type Warehouse, type InsertWarehouse,
+  stockLocations, type StockLocation, type InsertStockLocation,
+  stockQuants, type StockQuant, type InsertStockQuant,
+  stockMoves, type StockMove, type InsertStockMove,
+  stockTransfers, type StockTransfer, type InsertStockTransfer,
+  reorderRules, type ReorderRule, type InsertReorderRule,
+  crmEmailTemplates, type CrmEmailTemplate, type InsertCrmEmailTemplate
 } from "@shared/schema";
 import fs from 'fs/promises';
 import path from 'path';
@@ -124,6 +141,192 @@ export interface IStorage {
   createLeadSource(c: InsertLeadSource): Promise<LeadSource>;
   updateLeadSource(id: number, c: Partial<InsertLeadSource>): Promise<LeadSource | undefined>;
   deleteLeadSource(id: number): Promise<boolean>;
+
+  // CRM Pipeline Stages
+  getAllCrmStages(companyId?: number): Promise<CrmStage[]>;
+  createCrmStage(c: InsertCrmStage): Promise<CrmStage>;
+  updateCrmStage(id: number, c: Partial<InsertCrmStage>): Promise<CrmStage | undefined>;
+  deleteCrmStage(id: number): Promise<boolean>;
+
+  // CRM Lost Reasons
+  getAllCrmLostReasons(companyId?: number): Promise<CrmLostReason[]>;
+  createCrmLostReason(c: InsertCrmLostReason): Promise<CrmLostReason>;
+  updateCrmLostReason(id: number, c: Partial<InsertCrmLostReason>): Promise<CrmLostReason | undefined>;
+  deleteCrmLostReason(id: number): Promise<boolean>;
+
+  // CRM Activities
+  getCrmActivities(leadId: number): Promise<CrmActivity[]>;
+  getAllCrmActivities(companyId?: number): Promise<CrmActivity[]>;
+  createCrmActivity(a: InsertCrmActivity): Promise<CrmActivity>;
+  updateCrmActivity(id: number, a: Partial<InsertCrmActivity>): Promise<CrmActivity | undefined>;
+  deleteCrmActivity(id: number): Promise<boolean>;
+
+  // CRM Email Templates
+  getCrmEmailTemplates(companyId?: number): Promise<CrmEmailTemplate[]>;
+  createCrmEmailTemplate(t: InsertCrmEmailTemplate): Promise<CrmEmailTemplate>;
+  updateCrmEmailTemplate(id: number, t: Partial<InsertCrmEmailTemplate>): Promise<CrmEmailTemplate | undefined>;
+  deleteCrmEmailTemplate(id: number): Promise<boolean>;
+
+  // Manufacturing
+  getAllWorkCentres(companyId?: number): Promise<any[]>;
+  createWorkCentre(w: any): Promise<any>;
+  updateWorkCentre(id: number, w: any): Promise<any>;
+  deleteWorkCentre(id: number): Promise<boolean>;
+  getAllBoms(companyId?: number): Promise<any[]>;
+  getBom(id: number): Promise<any>;
+  createBom(b: any): Promise<any>;
+  updateBom(id: number, b: any): Promise<any>;
+  deleteBom(id: number): Promise<boolean>;
+  getAllBomLines(bomId: number): Promise<any[]>;
+  createBomLine(l: any): Promise<any>;
+  updateBomLine(id: number, l: any): Promise<any>;
+  deleteBomLine(id: number): Promise<boolean>;
+  getAllProductionOrders(companyId?: number): Promise<any[]>;
+  getProductionOrder(id: number): Promise<any>;
+  createProductionOrder(o: any): Promise<any>;
+  updateProductionOrder(id: number, o: any): Promise<any>;
+  deleteProductionOrder(id: number): Promise<boolean>;
+  confirmProductionOrder(id: number): Promise<any>;
+  // Purchasing
+  getAllRfqs(companyId?: number): Promise<any[]>;
+  getRfq(id: number): Promise<any>;
+  createRfq(r: any): Promise<any>;
+  updateRfq(id: number, r: any): Promise<any>;
+  deleteRfq(id: number): Promise<boolean>;
+  getAllGrns(companyId?: number): Promise<any[]>;
+  getGrn(id: number): Promise<any>;
+  createGrn(g: any): Promise<any>;
+  updateGrn(id: number, g: any): Promise<any>;
+  deleteGrn(id: number): Promise<boolean>;
+  validateGrn(id: number): Promise<any>;
+  // Sales
+  getAllDeliveryOrders(companyId?: number): Promise<any[]>;
+  getDeliveryOrder(id: number): Promise<any>;
+  createDeliveryOrder(d: any): Promise<any>;
+  updateDeliveryOrder(id: number, d: any): Promise<any>;
+  deleteDeliveryOrder(id: number): Promise<boolean>;
+  validateDeliveryOrder(id: number): Promise<any>;
+  getAllPriceLists(companyId?: number): Promise<any[]>;
+  createPriceList(p: any): Promise<any>;
+  updatePriceList(id: number, p: any): Promise<any>;
+  deletePriceList(id: number): Promise<boolean>;
+  // HR
+  getAllAppraisals(companyId?: number): Promise<any[]>;
+  getAppraisal(id: number): Promise<any>;
+  createAppraisal(a: any): Promise<any>;
+  updateAppraisal(id: number, a: any): Promise<any>;
+  deleteAppraisal(id: number): Promise<boolean>;
+  getAllExpenseClaims(companyId?: number): Promise<any[]>;
+  getExpenseClaim(id: number): Promise<any>;
+  createExpenseClaim(e: any): Promise<any>;
+  updateExpenseClaim(id: number, e: any): Promise<any>;
+  deleteExpenseClaim(id: number): Promise<boolean>;
+  getAllJobPositions(companyId?: number): Promise<any[]>;
+  createJobPosition(p: any): Promise<any>;
+  updateJobPosition(id: number, p: any): Promise<any>;
+  deleteJobPosition(id: number): Promise<boolean>;
+  getAllJobApplications(companyId?: number): Promise<any[]>;
+  getJobApplication(id: number): Promise<any>;
+  createJobApplication(a: any): Promise<any>;
+  updateJobApplication(id: number, a: any): Promise<any>;
+  deleteJobApplication(id: number): Promise<boolean>;
+  // Finance
+  getAllAccounts(companyId?: number): Promise<any[]>;
+  createAccount(a: any): Promise<any>;
+  updateAccount(id: number, a: any): Promise<any>;
+  deleteAccount(id: number): Promise<boolean>;
+  getAllJournalEntries(companyId?: number): Promise<any[]>;
+  getJournalEntry(id: number): Promise<any>;
+  createJournalEntry(e: any): Promise<any>;
+  updateJournalEntry(id: number, e: any): Promise<any>;
+  deleteJournalEntry(id: number): Promise<boolean>;
+  postJournalEntry(id: number): Promise<any>;
+  getFinancialSummary(companyId?: number): Promise<any>;
+
+  // HRMS: Departments
+  getAllDepartments(companyId?: number): Promise<Department[]>;
+  getDepartment(id: number): Promise<Department | undefined>;
+  createDepartment(d: InsertDepartment): Promise<Department>;
+  updateDepartment(id: number, d: Partial<InsertDepartment>): Promise<Department | undefined>;
+  deleteDepartment(id: number): Promise<boolean>;
+
+  // HRMS: Designations
+  getAllDesignations(companyId?: number): Promise<Designation[]>;
+  getDesignation(id: number): Promise<Designation | undefined>;
+  createDesignation(d: InsertDesignation): Promise<Designation>;
+  updateDesignation(id: number, d: Partial<InsertDesignation>): Promise<Designation | undefined>;
+  deleteDesignation(id: number): Promise<boolean>;
+
+  // HRMS: Employees
+  getAllEmployees(companyId?: number): Promise<Employee[]>;
+  getEmployee(id: number): Promise<Employee | undefined>;
+  createEmployee(e: InsertEmployee): Promise<Employee>;
+  updateEmployee(id: number, e: Partial<InsertEmployee>): Promise<Employee | undefined>;
+  deleteEmployee(id: number): Promise<boolean>;
+
+  // HRMS: Attendance
+  getAllAttendance(companyId?: number): Promise<Attendance[]>;
+  getAttendanceByEmployee(employeeId: number): Promise<Attendance[]>;
+  createAttendance(a: InsertAttendance): Promise<Attendance>;
+  updateAttendance(id: number, a: Partial<InsertAttendance>): Promise<Attendance | undefined>;
+  deleteAttendance(id: number): Promise<boolean>;
+
+  // HRMS: Leave Types
+  getAllLeaveTypes(companyId?: number): Promise<LeaveType[]>;
+  createLeaveType(t: InsertLeaveType): Promise<LeaveType>;
+  updateLeaveType(id: number, t: Partial<InsertLeaveType>): Promise<LeaveType | undefined>;
+  deleteLeaveType(id: number): Promise<boolean>;
+
+  // HRMS: Leave Requests
+  getAllLeaveRequests(companyId?: number): Promise<LeaveRequest[]>;
+  getLeaveRequest(id: number): Promise<LeaveRequest | undefined>;
+  createLeaveRequest(r: InsertLeaveRequest): Promise<LeaveRequest>;
+  updateLeaveRequest(id: number, r: Partial<InsertLeaveRequest>): Promise<LeaveRequest | undefined>;
+  deleteLeaveRequest(id: number): Promise<boolean>;
+
+  // HRMS: Payslips
+  getAllPayslips(companyId?: number): Promise<Payslip[]>;
+  getPayslip(id: number): Promise<Payslip | undefined>;
+  createPayslip(p: InsertPayslip): Promise<Payslip>;
+  updatePayslip(id: number, p: Partial<InsertPayslip>): Promise<Payslip | undefined>;
+  deletePayslip(id: number): Promise<boolean>;
+
+  // Inventory: Warehouses
+  getAllWarehouses(companyId?: number): Promise<Warehouse[]>;
+  getWarehouse(id: number): Promise<Warehouse | undefined>;
+  createWarehouse(w: InsertWarehouse): Promise<Warehouse>;
+  updateWarehouse(id: number, w: Partial<InsertWarehouse>): Promise<Warehouse | undefined>;
+  deleteWarehouse(id: number): Promise<boolean>;
+
+  // Inventory: Stock Locations
+  getAllStockLocations(companyId?: number): Promise<StockLocation[]>;
+  getStockLocation(id: number): Promise<StockLocation | undefined>;
+  createStockLocation(l: InsertStockLocation): Promise<StockLocation>;
+  updateStockLocation(id: number, l: Partial<InsertStockLocation>): Promise<StockLocation | undefined>;
+  deleteStockLocation(id: number): Promise<boolean>;
+
+  // Inventory: Stock Quants (on-hand per location)
+  getAllStockQuants(companyId?: number): Promise<StockQuant[]>;
+  adjustStockQuant(companyId: number | null | undefined, itemId: string, locationId: number, delta: number): Promise<StockQuant>;
+
+  // Inventory: Stock Moves (createStockMove applies to quants when status === 'done')
+  getAllStockMoves(companyId?: number): Promise<StockMove[]>;
+  createStockMove(m: InsertStockMove): Promise<StockMove>;
+  deleteStockMove(id: number): Promise<boolean>;
+
+  // Inventory: Stock Transfers
+  getAllStockTransfers(companyId?: number): Promise<StockTransfer[]>;
+  getStockTransfer(id: number): Promise<StockTransfer | undefined>;
+  createStockTransfer(t: InsertStockTransfer): Promise<StockTransfer>;
+  updateStockTransfer(id: number, t: Partial<InsertStockTransfer>): Promise<StockTransfer | undefined>;
+  deleteStockTransfer(id: number): Promise<boolean>;
+  validateStockTransfer(id: number): Promise<StockTransfer | undefined>;
+
+  // Inventory: Reorder Rules
+  getAllReorderRules(companyId?: number): Promise<ReorderRule[]>;
+  createReorderRule(r: InsertReorderRule): Promise<ReorderRule>;
+  updateReorderRule(id: number, r: Partial<InsertReorderRule>): Promise<ReorderRule | undefined>;
+  deleteReorderRule(id: number): Promise<boolean>;
 
   // Quotation operations
   getQuotation(id: number): Promise<Quotation | undefined>;
@@ -257,6 +460,22 @@ export class JSONFileStorage implements IStorage {
   private leadDiscussions: Map<number, LeadDiscussion>;
   private leadCategories: Map<number, LeadCategory>;
   private leadSources: Map<number, LeadSource>;
+  private crmStages: Map<number, CrmStage>;
+  private crmLostReasons: Map<number, CrmLostReason>;
+  private crmActivities: Map<number, CrmActivity>;
+  private departments: Map<number, Department>;
+  private designations: Map<number, Designation>;
+  private employees: Map<number, Employee>;
+  private attendance: Map<number, Attendance>;
+  private leaveTypes: Map<number, LeaveType>;
+  private leaveRequests: Map<number, LeaveRequest>;
+  private payslips: Map<number, Payslip>;
+  private warehouses: Map<number, Warehouse>;
+  private stockLocations: Map<number, StockLocation>;
+  private stockQuants: Map<number, StockQuant>;
+  private stockMoves: Map<number, StockMove>;
+  private stockTransfers: Map<number, StockTransfer>;
+  private reorderRules: Map<number, ReorderRule>;
   private quotations: Map<number, Quotation>;
   private orders: Map<number, Order>;
   private invoices: Map<number, Invoice>;
@@ -283,6 +502,22 @@ export class JSONFileStorage implements IStorage {
   leadDiscussionIdCounter: number;
   leadCategoryIdCounter: number;
   leadSourceIdCounter: number;
+  crmStageIdCounter: number;
+  crmLostReasonIdCounter: number;
+  crmActivityIdCounter: number;
+  departmentIdCounter: number;
+  designationIdCounter: number;
+  employeeIdCounter: number;
+  attendanceIdCounter: number;
+  leaveTypeIdCounter: number;
+  leaveRequestIdCounter: number;
+  payslipIdCounter: number;
+  warehouseIdCounter: number;
+  stockLocationIdCounter: number;
+  stockQuantIdCounter: number;
+  stockMoveIdCounter: number;
+  stockTransferIdCounter: number;
+  reorderRuleIdCounter: number;
   quotationIdCounter: number;
   orderIdCounter: number;
   invoiceIdCounter: number;
@@ -307,6 +542,22 @@ export class JSONFileStorage implements IStorage {
     this.leadDiscussions = new Map();
     this.leadCategories = new Map();
     this.leadSources = new Map();
+    this.crmStages = new Map();
+    this.crmLostReasons = new Map();
+    this.crmActivities = new Map();
+    this.departments = new Map();
+    this.designations = new Map();
+    this.employees = new Map();
+    this.attendance = new Map();
+    this.leaveTypes = new Map();
+    this.leaveRequests = new Map();
+    this.payslips = new Map();
+    this.warehouses = new Map();
+    this.stockLocations = new Map();
+    this.stockQuants = new Map();
+    this.stockMoves = new Map();
+    this.stockTransfers = new Map();
+    this.reorderRules = new Map();
     this.quotations = new Map();
     this.orders = new Map();
     this.invoices = new Map();
@@ -332,6 +583,22 @@ export class JSONFileStorage implements IStorage {
     this.leadDiscussionIdCounter = 1;
     this.leadCategoryIdCounter = 1;
     this.leadSourceIdCounter = 1;
+    this.crmStageIdCounter = 1;
+    this.crmLostReasonIdCounter = 1;
+    this.crmActivityIdCounter = 1;
+    this.departmentIdCounter = 1;
+    this.designationIdCounter = 1;
+    this.employeeIdCounter = 1;
+    this.attendanceIdCounter = 1;
+    this.leaveTypeIdCounter = 1;
+    this.leaveRequestIdCounter = 1;
+    this.payslipIdCounter = 1;
+    this.warehouseIdCounter = 1;
+    this.stockLocationIdCounter = 1;
+    this.stockQuantIdCounter = 1;
+    this.stockMoveIdCounter = 1;
+    this.stockTransferIdCounter = 1;
+    this.reorderRuleIdCounter = 1;
     this.quotationIdCounter = 500;
     this.orderIdCounter = 1;
     this.invoiceIdCounter = 1;
@@ -1028,6 +1295,550 @@ export class JSONFileStorage implements IStorage {
     if (deleted) await this.saveLeadSources();
     return deleted;
   }
+
+  // CRM Pipeline Stage operations
+  async getAllCrmStages(companyId?: number): Promise<CrmStage[]> {
+    const all = Array.from(this.crmStages.values());
+    const filtered = companyId ? all.filter(s => s.companyId === companyId) : all;
+    return filtered.sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
+  }
+
+  async createCrmStage(insert: InsertCrmStage): Promise<CrmStage> {
+    const id = this.crmStageIdCounter++;
+    const rec: CrmStage = {
+      id,
+      companyId: insert.companyId ?? null,
+      name: insert.name,
+      sequence: insert.sequence ?? 0,
+      probability: insert.probability ?? 0,
+      isWon: insert.isWon ?? false,
+      isActive: insert.isActive ?? true,
+      createdAt: new Date(),
+    } as CrmStage;
+    this.crmStages.set(id, rec);
+    return rec;
+  }
+
+  async updateCrmStage(id: number, updates: Partial<InsertCrmStage>): Promise<CrmStage | undefined> {
+    const existing = this.crmStages.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...updates } as CrmStage;
+    this.crmStages.set(id, updated);
+    return updated;
+  }
+
+  async deleteCrmStage(id: number): Promise<boolean> {
+    return this.crmStages.delete(id);
+  }
+
+  // CRM Lost Reason operations
+  async getAllCrmLostReasons(companyId?: number): Promise<CrmLostReason[]> {
+    const all = Array.from(this.crmLostReasons.values());
+    return companyId ? all.filter(r => r.companyId === companyId) : all;
+  }
+
+  async createCrmLostReason(insert: InsertCrmLostReason): Promise<CrmLostReason> {
+    const id = this.crmLostReasonIdCounter++;
+    const rec: CrmLostReason = {
+      id,
+      companyId: insert.companyId ?? null,
+      name: insert.name,
+      isActive: insert.isActive ?? true,
+      createdAt: new Date(),
+    } as CrmLostReason;
+    this.crmLostReasons.set(id, rec);
+    return rec;
+  }
+
+  async updateCrmLostReason(id: number, updates: Partial<InsertCrmLostReason>): Promise<CrmLostReason | undefined> {
+    const existing = this.crmLostReasons.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...updates } as CrmLostReason;
+    this.crmLostReasons.set(id, updated);
+    return updated;
+  }
+
+  async deleteCrmLostReason(id: number): Promise<boolean> {
+    return this.crmLostReasons.delete(id);
+  }
+
+  // CRM Activity operations
+  async getCrmActivities(leadId: number): Promise<CrmActivity[]> {
+    return Array.from(this.crmActivities.values())
+      .filter(a => a.leadId === leadId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async getAllCrmActivities(companyId?: number): Promise<CrmActivity[]> {
+    const all = Array.from(this.crmActivities.values());
+    return companyId ? all.filter(a => a.companyId === companyId) : all;
+  }
+
+  async createCrmActivity(insert: InsertCrmActivity): Promise<CrmActivity> {
+    const id = this.crmActivityIdCounter++;
+    const rec: CrmActivity = {
+      id,
+      companyId: insert.companyId ?? null,
+      leadId: insert.leadId,
+      activityType: insert.activityType ?? "todo",
+      summary: insert.summary,
+      notes: insert.notes ?? null,
+      dueDate: insert.dueDate ?? null,
+      assignedTo: insert.assignedTo ?? null,
+      status: insert.status ?? "planned",
+      completedAt: insert.completedAt ?? null,
+      createdBy: insert.createdBy,
+      createdAt: new Date(),
+    } as CrmActivity;
+    this.crmActivities.set(id, rec);
+    return rec;
+  }
+
+  async updateCrmActivity(id: number, updates: Partial<InsertCrmActivity>): Promise<CrmActivity | undefined> {
+    const existing = this.crmActivities.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...updates } as CrmActivity;
+    this.crmActivities.set(id, updated);
+    return updated;
+  }
+
+  async deleteCrmActivity(id: number): Promise<boolean> {
+    return this.crmActivities.delete(id);
+  }
+
+  // CRM Email Templates
+  private crmEmailTemplates: Map<number, CrmEmailTemplate> = new Map();
+  private crmEmailTemplateIdCounter = 1;
+
+  async getCrmEmailTemplates(companyId?: number): Promise<CrmEmailTemplate[]> {
+    const all = Array.from(this.crmEmailTemplates.values());
+    return companyId ? all.filter(t => t.companyId === companyId) : all;
+  }
+  async createCrmEmailTemplate(insert: InsertCrmEmailTemplate): Promise<CrmEmailTemplate> {
+    const id = this.crmEmailTemplateIdCounter++;
+    const rec: CrmEmailTemplate = { id, companyId: insert.companyId ?? null, name: insert.name, subject: insert.subject, body: insert.body, category: insert.category ?? 'general', isActive: insert.isActive ?? true, createdBy: insert.createdBy, createdAt: new Date() };
+    this.crmEmailTemplates.set(id, rec);
+    return rec;
+  }
+  async updateCrmEmailTemplate(id: number, updates: Partial<InsertCrmEmailTemplate>): Promise<CrmEmailTemplate | undefined> {
+    const existing = this.crmEmailTemplates.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...updates };
+    this.crmEmailTemplates.set(id, updated);
+    return updated;
+  }
+  async deleteCrmEmailTemplate(id: number): Promise<boolean> { return this.crmEmailTemplates.delete(id); }
+
+  // ==================== MANUFACTURING (new) ====================
+  private workCentres: Map<number, any> = new Map(); private wcIdCtr = 1;
+  private boms: Map<number, any> = new Map(); private bomIdCtr = 1;
+  private bomLines: Map<number, any> = new Map(); private bomLineIdCtr = 1;
+  private productionOrders: Map<number, any> = new Map(); private poIdCtr = 1;
+  async getAllWorkCentres(companyId?: number): Promise<any[]> { const a = Array.from(this.workCentres.values()); return companyId ? a.filter(x => x.companyId === companyId) : a; }
+  async createWorkCentre(w: any): Promise<any> { const id = this.wcIdCtr++; const r = { id, createdAt: new Date(), ...w }; this.workCentres.set(id, r); return r; }
+  async updateWorkCentre(id: number, w: any): Promise<any> { const e = this.workCentres.get(id); if (!e) return undefined; const u = { ...e, ...w }; this.workCentres.set(id, u); return u; }
+  async deleteWorkCentre(id: number): Promise<boolean> { return this.workCentres.delete(id); }
+  async getAllBoms(companyId?: number): Promise<any[]> { const a = Array.from(this.boms.values()); return companyId ? a.filter(x => x.companyId === companyId) : a; }
+  async getBom(id: number): Promise<any> { return this.boms.get(id); }
+  async createBom(b: any): Promise<any> { const id = this.bomIdCtr++; const r = { id, createdAt: new Date(), ...b }; this.boms.set(id, r); return r; }
+  async updateBom(id: number, b: any): Promise<any> { const e = this.boms.get(id); if (!e) return undefined; const u = { ...e, ...b }; this.boms.set(id, u); return u; }
+  async deleteBom(id: number): Promise<boolean> { return this.boms.delete(id); }
+  async getAllBomLines(bomId: number): Promise<any[]> { return Array.from(this.bomLines.values()).filter(l => l.bomId === bomId); }
+  async createBomLine(l: any): Promise<any> { const id = this.bomLineIdCtr++; const r = { id, createdAt: new Date(), ...l }; this.bomLines.set(id, r); return r; }
+  async updateBomLine(id: number, l: any): Promise<any> { const e = this.bomLines.get(id); if (!e) return undefined; const u = { ...e, ...l }; this.bomLines.set(id, u); return u; }
+  async deleteBomLine(id: number): Promise<boolean> { return this.bomLines.delete(id); }
+  async getAllProductionOrders(companyId?: number): Promise<any[]> { const a = Array.from(this.productionOrders.values()); return companyId ? a.filter(x => x.companyId === companyId) : a; }
+  async getProductionOrder(id: number): Promise<any> { return this.productionOrders.get(id); }
+  async createProductionOrder(o: any): Promise<any> { const id = this.poIdCtr++; const r = { id, createdAt: new Date(), status: 'draft', ...o }; this.productionOrders.set(id, r); return r; }
+  async updateProductionOrder(id: number, o: any): Promise<any> { const e = this.productionOrders.get(id); if (!e) return undefined; const u = { ...e, ...o }; this.productionOrders.set(id, u); return u; }
+  async deleteProductionOrder(id: number): Promise<boolean> { return this.productionOrders.delete(id); }
+  async confirmProductionOrder(id: number): Promise<any> { return this.updateProductionOrder(id, { status: 'confirmed' }); }
+
+  // ==================== PURCHASING (new) ====================
+  private rfqs: Map<number, any> = new Map(); private rfqIdCtr = 1;
+  private grns: Map<number, any> = new Map(); private grnIdCtr = 1;
+  async getAllRfqs(companyId?: number): Promise<any[]> { const a = Array.from(this.rfqs.values()); return companyId ? a.filter(x => x.companyId === companyId) : a; }
+  async getRfq(id: number): Promise<any> { return this.rfqs.get(id); }
+  async createRfq(r: any): Promise<any> { const id = this.rfqIdCtr++; const rec = { id, createdAt: new Date(), status: 'draft', ...r }; this.rfqs.set(id, rec); return rec; }
+  async updateRfq(id: number, r: any): Promise<any> { const e = this.rfqs.get(id); if (!e) return undefined; const u = { ...e, ...r }; this.rfqs.set(id, u); return u; }
+  async deleteRfq(id: number): Promise<boolean> { return this.rfqs.delete(id); }
+  async getAllGrns(companyId?: number): Promise<any[]> { const a = Array.from(this.grns.values()); return companyId ? a.filter(x => x.companyId === companyId) : a; }
+  async getGrn(id: number): Promise<any> { return this.grns.get(id); }
+  async createGrn(g: any): Promise<any> { const id = this.grnIdCtr++; const rec = { id, createdAt: new Date(), status: 'draft', ...g }; this.grns.set(id, rec); return rec; }
+  async updateGrn(id: number, g: any): Promise<any> { const e = this.grns.get(id); if (!e) return undefined; const u = { ...e, ...g }; this.grns.set(id, u); return u; }
+  async deleteGrn(id: number): Promise<boolean> { return this.grns.delete(id); }
+  async validateGrn(id: number): Promise<any> { return this.updateGrn(id, { status: 'validated' }); }
+
+  // ==================== SALES (new) ====================
+  private deliveryOrders: Map<number, any> = new Map(); private doIdCtr = 1;
+  private priceLists: Map<number, any> = new Map(); private plIdCtr = 1;
+  async getAllDeliveryOrders(companyId?: number): Promise<any[]> { const a = Array.from(this.deliveryOrders.values()); return companyId ? a.filter(x => x.companyId === companyId) : a; }
+  async getDeliveryOrder(id: number): Promise<any> { return this.deliveryOrders.get(id); }
+  async createDeliveryOrder(d: any): Promise<any> { const id = this.doIdCtr++; const r = { id, createdAt: new Date(), status: 'draft', ...d }; this.deliveryOrders.set(id, r); return r; }
+  async updateDeliveryOrder(id: number, d: any): Promise<any> { const e = this.deliveryOrders.get(id); if (!e) return undefined; const u = { ...e, ...d }; this.deliveryOrders.set(id, u); return u; }
+  async deleteDeliveryOrder(id: number): Promise<boolean> { return this.deliveryOrders.delete(id); }
+  async validateDeliveryOrder(id: number): Promise<any> { return this.updateDeliveryOrder(id, { status: 'done' }); }
+  async getAllPriceLists(companyId?: number): Promise<any[]> { const a = Array.from(this.priceLists.values()); return companyId ? a.filter(x => x.companyId === companyId) : a; }
+  async createPriceList(p: any): Promise<any> { const id = this.plIdCtr++; const r = { id, createdAt: new Date(), ...p }; this.priceLists.set(id, r); return r; }
+  async updatePriceList(id: number, p: any): Promise<any> { const e = this.priceLists.get(id); if (!e) return undefined; const u = { ...e, ...p }; this.priceLists.set(id, u); return u; }
+  async deletePriceList(id: number): Promise<boolean> { return this.priceLists.delete(id); }
+
+  // ==================== HR (new) ====================
+  private appraisals: Map<number, any> = new Map(); private apprIdCtr = 1;
+  private expenseClaims: Map<number, any> = new Map(); private expIdCtr = 1;
+  private jobPositions: Map<number, any> = new Map(); private jpIdCtr = 1;
+  private jobApplications: Map<number, any> = new Map(); private jaIdCtr = 1;
+  async getAllAppraisals(companyId?: number): Promise<any[]> { const a = Array.from(this.appraisals.values()); return companyId ? a.filter(x => x.companyId === companyId) : a; }
+  async getAppraisal(id: number): Promise<any> { return this.appraisals.get(id); }
+  async createAppraisal(a: any): Promise<any> { const id = this.apprIdCtr++; const r = { id, createdAt: new Date(), status: 'draft', ...a }; this.appraisals.set(id, r); return r; }
+  async updateAppraisal(id: number, a: any): Promise<any> { const e = this.appraisals.get(id); if (!e) return undefined; const u = { ...e, ...a }; this.appraisals.set(id, u); return u; }
+  async deleteAppraisal(id: number): Promise<boolean> { return this.appraisals.delete(id); }
+  async getAllExpenseClaims(companyId?: number): Promise<any[]> { const a = Array.from(this.expenseClaims.values()); return companyId ? a.filter(x => x.companyId === companyId) : a; }
+  async getExpenseClaim(id: number): Promise<any> { return this.expenseClaims.get(id); }
+  async createExpenseClaim(e: any): Promise<any> { const id = this.expIdCtr++; const r = { id, createdAt: new Date(), status: 'draft', ...e }; this.expenseClaims.set(id, r); return r; }
+  async updateExpenseClaim(id: number, e: any): Promise<any> { const ex = this.expenseClaims.get(id); if (!ex) return undefined; const u = { ...ex, ...e }; this.expenseClaims.set(id, u); return u; }
+  async deleteExpenseClaim(id: number): Promise<boolean> { return this.expenseClaims.delete(id); }
+  async getAllJobPositions(companyId?: number): Promise<any[]> { const a = Array.from(this.jobPositions.values()); return companyId ? a.filter(x => x.companyId === companyId) : a; }
+  async createJobPosition(p: any): Promise<any> { const id = this.jpIdCtr++; const r = { id, createdAt: new Date(), ...p }; this.jobPositions.set(id, r); return r; }
+  async updateJobPosition(id: number, p: any): Promise<any> { const e = this.jobPositions.get(id); if (!e) return undefined; const u = { ...e, ...p }; this.jobPositions.set(id, u); return u; }
+  async deleteJobPosition(id: number): Promise<boolean> { return this.jobPositions.delete(id); }
+  async getAllJobApplications(companyId?: number): Promise<any[]> { const a = Array.from(this.jobApplications.values()); return companyId ? a.filter(x => x.companyId === companyId) : a; }
+  async getJobApplication(id: number): Promise<any> { return this.jobApplications.get(id); }
+  async createJobApplication(a: any): Promise<any> { const id = this.jaIdCtr++; const r = { id, createdAt: new Date(), stage: 'new', ...a }; this.jobApplications.set(id, r); return r; }
+  async updateJobApplication(id: number, a: any): Promise<any> { const e = this.jobApplications.get(id); if (!e) return undefined; const u = { ...e, ...a }; this.jobApplications.set(id, u); return u; }
+  async deleteJobApplication(id: number): Promise<boolean> { return this.jobApplications.delete(id); }
+
+  // ==================== FINANCE (new) ====================
+  private accounts: Map<number, any> = new Map(); private accIdCtr = 1;
+  private journalEntries: Map<number, any> = new Map(); private jeIdCtr = 1;
+  async getAllAccounts(companyId?: number): Promise<any[]> { const a = Array.from(this.accounts.values()); return companyId ? a.filter(x => x.companyId === companyId) : a; }
+  async createAccount(a: any): Promise<any> { const id = this.accIdCtr++; const r = { id, createdAt: new Date(), currentBalance: a.openingBalance ?? 0, isActive: true, ...a }; this.accounts.set(id, r); return r; }
+  async updateAccount(id: number, a: any): Promise<any> { const e = this.accounts.get(id); if (!e) return undefined; const u = { ...e, ...a }; this.accounts.set(id, u); return u; }
+  async deleteAccount(id: number): Promise<boolean> { return this.accounts.delete(id); }
+  async getAllJournalEntries(companyId?: number): Promise<any[]> { const a = Array.from(this.journalEntries.values()); return companyId ? a.filter(x => x.companyId === companyId) : a; }
+  async getJournalEntry(id: number): Promise<any> { return this.journalEntries.get(id); }
+  async createJournalEntry(e: any): Promise<any> { const id = this.jeIdCtr++; const r = { id, createdAt: new Date(), status: 'draft', ...e }; this.journalEntries.set(id, r); return r; }
+  async updateJournalEntry(id: number, e: any): Promise<any> { const ex = this.journalEntries.get(id); if (!ex) return undefined; const u = { ...ex, ...e }; this.journalEntries.set(id, u); return u; }
+  async deleteJournalEntry(id: number): Promise<boolean> { return this.journalEntries.delete(id); }
+  async postJournalEntry(id: number): Promise<any> { return this.updateJournalEntry(id, { status: 'posted' }); }
+  async getFinancialSummary(companyId?: number): Promise<any> {
+    const accs = await this.getAllAccounts(companyId);
+    const sum = (type: string) => accs.filter(a => a.type === type).reduce((s, a) => s + (parseFloat(a.currentBalance) || 0), 0);
+    return { assets: sum('assets'), liabilities: sum('liabilities'), equity: sum('equity'), income: sum('income'), expense: sum('expense') };
+  }
+
+  // ==================== HRMS ====================
+  // Departments
+  async getAllDepartments(companyId?: number): Promise<Department[]> {
+    const all = Array.from(this.departments.values());
+    return companyId ? all.filter(d => d.companyId === companyId) : all;
+  }
+  async getDepartment(id: number): Promise<Department | undefined> { return this.departments.get(id); }
+  async createDepartment(insert: InsertDepartment): Promise<Department> {
+    const id = this.departmentIdCounter++;
+    const rec = { id, createdAt: new Date(), isActive: insert.isActive ?? true, ...insert } as Department;
+    this.departments.set(id, rec);
+    return rec;
+  }
+  async updateDepartment(id: number, updates: Partial<InsertDepartment>): Promise<Department | undefined> {
+    const existing = this.departments.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...updates } as Department;
+    this.departments.set(id, updated);
+    return updated;
+  }
+  async deleteDepartment(id: number): Promise<boolean> { return this.departments.delete(id); }
+
+  // Designations
+  async getAllDesignations(companyId?: number): Promise<Designation[]> {
+    const all = Array.from(this.designations.values());
+    return companyId ? all.filter(d => d.companyId === companyId) : all;
+  }
+  async getDesignation(id: number): Promise<Designation | undefined> { return this.designations.get(id); }
+  async createDesignation(insert: InsertDesignation): Promise<Designation> {
+    const id = this.designationIdCounter++;
+    const rec = { id, createdAt: new Date(), isActive: insert.isActive ?? true, ...insert } as Designation;
+    this.designations.set(id, rec);
+    return rec;
+  }
+  async updateDesignation(id: number, updates: Partial<InsertDesignation>): Promise<Designation | undefined> {
+    const existing = this.designations.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...updates } as Designation;
+    this.designations.set(id, updated);
+    return updated;
+  }
+  async deleteDesignation(id: number): Promise<boolean> { return this.designations.delete(id); }
+
+  // Employees
+  async getAllEmployees(companyId?: number): Promise<Employee[]> {
+    const all = Array.from(this.employees.values());
+    return companyId ? all.filter(e => e.companyId === companyId) : all;
+  }
+  async getEmployee(id: number): Promise<Employee | undefined> { return this.employees.get(id); }
+  async createEmployee(insert: InsertEmployee): Promise<Employee> {
+    const id = this.employeeIdCounter++;
+    const rec = { id, createdAt: new Date(), status: insert.status ?? "active", employmentType: insert.employmentType ?? "full_time", ...insert } as Employee;
+    this.employees.set(id, rec);
+    return rec;
+  }
+  async updateEmployee(id: number, updates: Partial<InsertEmployee>): Promise<Employee | undefined> {
+    const existing = this.employees.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...updates } as Employee;
+    this.employees.set(id, updated);
+    return updated;
+  }
+  async deleteEmployee(id: number): Promise<boolean> { return this.employees.delete(id); }
+
+  // Attendance
+  async getAllAttendance(companyId?: number): Promise<Attendance[]> {
+    const all = Array.from(this.attendance.values());
+    return companyId ? all.filter(a => a.companyId === companyId) : all;
+  }
+  async getAttendanceByEmployee(employeeId: number): Promise<Attendance[]> {
+    return Array.from(this.attendance.values()).filter(a => a.employeeId === employeeId);
+  }
+  async createAttendance(insert: InsertAttendance): Promise<Attendance> {
+    const id = this.attendanceIdCounter++;
+    const rec = { id, createdAt: new Date(), status: insert.status ?? "present", ...insert } as Attendance;
+    this.attendance.set(id, rec);
+    return rec;
+  }
+  async updateAttendance(id: number, updates: Partial<InsertAttendance>): Promise<Attendance | undefined> {
+    const existing = this.attendance.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...updates } as Attendance;
+    this.attendance.set(id, updated);
+    return updated;
+  }
+  async deleteAttendance(id: number): Promise<boolean> { return this.attendance.delete(id); }
+
+  // Leave Types
+  async getAllLeaveTypes(companyId?: number): Promise<LeaveType[]> {
+    const all = Array.from(this.leaveTypes.values());
+    return companyId ? all.filter(t => t.companyId === companyId) : all;
+  }
+  async createLeaveType(insert: InsertLeaveType): Promise<LeaveType> {
+    const id = this.leaveTypeIdCounter++;
+    const rec = { id, createdAt: new Date(), isActive: insert.isActive ?? true, isPaid: insert.isPaid ?? true, ...insert } as LeaveType;
+    this.leaveTypes.set(id, rec);
+    return rec;
+  }
+  async updateLeaveType(id: number, updates: Partial<InsertLeaveType>): Promise<LeaveType | undefined> {
+    const existing = this.leaveTypes.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...updates } as LeaveType;
+    this.leaveTypes.set(id, updated);
+    return updated;
+  }
+  async deleteLeaveType(id: number): Promise<boolean> { return this.leaveTypes.delete(id); }
+
+  // Leave Requests
+  async getAllLeaveRequests(companyId?: number): Promise<LeaveRequest[]> {
+    const all = Array.from(this.leaveRequests.values());
+    return companyId ? all.filter(r => r.companyId === companyId) : all;
+  }
+  async getLeaveRequest(id: number): Promise<LeaveRequest | undefined> { return this.leaveRequests.get(id); }
+  async createLeaveRequest(insert: InsertLeaveRequest): Promise<LeaveRequest> {
+    const id = this.leaveRequestIdCounter++;
+    const rec = { id, createdAt: new Date(), status: insert.status ?? "pending", ...insert } as LeaveRequest;
+    this.leaveRequests.set(id, rec);
+    return rec;
+  }
+  async updateLeaveRequest(id: number, updates: Partial<InsertLeaveRequest>): Promise<LeaveRequest | undefined> {
+    const existing = this.leaveRequests.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...updates } as LeaveRequest;
+    this.leaveRequests.set(id, updated);
+    return updated;
+  }
+  async deleteLeaveRequest(id: number): Promise<boolean> { return this.leaveRequests.delete(id); }
+
+  // Payslips
+  async getAllPayslips(companyId?: number): Promise<Payslip[]> {
+    const all = Array.from(this.payslips.values());
+    return companyId ? all.filter(p => p.companyId === companyId) : all;
+  }
+  async getPayslip(id: number): Promise<Payslip | undefined> { return this.payslips.get(id); }
+  async createPayslip(insert: InsertPayslip): Promise<Payslip> {
+    const id = this.payslipIdCounter++;
+    const rec = { id, createdAt: new Date(), status: insert.status ?? "draft", ...insert } as Payslip;
+    this.payslips.set(id, rec);
+    return rec;
+  }
+  async updatePayslip(id: number, updates: Partial<InsertPayslip>): Promise<Payslip | undefined> {
+    const existing = this.payslips.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...updates } as Payslip;
+    this.payslips.set(id, updated);
+    return updated;
+  }
+  async deletePayslip(id: number): Promise<boolean> { return this.payslips.delete(id); }
+
+  // ==================== Inventory / Warehouse ====================
+  // Warehouses
+  async getAllWarehouses(companyId?: number): Promise<Warehouse[]> {
+    const all = Array.from(this.warehouses.values());
+    return companyId ? all.filter(w => w.companyId === companyId) : all;
+  }
+  async getWarehouse(id: number): Promise<Warehouse | undefined> { return this.warehouses.get(id); }
+  async createWarehouse(insert: InsertWarehouse): Promise<Warehouse> {
+    const id = this.warehouseIdCounter++;
+    const rec = { id, createdAt: new Date(), isActive: insert.isActive ?? true, ...insert } as Warehouse;
+    this.warehouses.set(id, rec);
+    return rec;
+  }
+  async updateWarehouse(id: number, updates: Partial<InsertWarehouse>): Promise<Warehouse | undefined> {
+    const existing = this.warehouses.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...updates } as Warehouse;
+    this.warehouses.set(id, updated);
+    return updated;
+  }
+  async deleteWarehouse(id: number): Promise<boolean> { return this.warehouses.delete(id); }
+
+  // Stock Locations
+  async getAllStockLocations(companyId?: number): Promise<StockLocation[]> {
+    const all = Array.from(this.stockLocations.values());
+    return companyId ? all.filter(l => l.companyId === companyId) : all;
+  }
+  async getStockLocation(id: number): Promise<StockLocation | undefined> { return this.stockLocations.get(id); }
+  async createStockLocation(insert: InsertStockLocation): Promise<StockLocation> {
+    const id = this.stockLocationIdCounter++;
+    const rec = { id, createdAt: new Date(), isActive: insert.isActive ?? true, type: insert.type ?? "internal", ...insert } as StockLocation;
+    this.stockLocations.set(id, rec);
+    return rec;
+  }
+  async updateStockLocation(id: number, updates: Partial<InsertStockLocation>): Promise<StockLocation | undefined> {
+    const existing = this.stockLocations.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...updates } as StockLocation;
+    this.stockLocations.set(id, updated);
+    return updated;
+  }
+  async deleteStockLocation(id: number): Promise<boolean> { return this.stockLocations.delete(id); }
+
+  // Stock Quants
+  async getAllStockQuants(companyId?: number): Promise<StockQuant[]> {
+    const all = Array.from(this.stockQuants.values());
+    return companyId ? all.filter(q => q.companyId === companyId) : all;
+  }
+  async adjustStockQuant(companyId: number | null | undefined, itemId: string, locationId: number, delta: number): Promise<StockQuant> {
+    let quant = Array.from(this.stockQuants.values()).find(q => String(q.itemId) === String(itemId) && q.locationId === locationId);
+    if (quant) {
+      quant = { ...quant, quantity: String((Number(quant.quantity) || 0) + delta), updatedAt: new Date() } as StockQuant;
+      this.stockQuants.set(quant.id, quant);
+      return quant;
+    }
+    const id = this.stockQuantIdCounter++;
+    const rec = { id, companyId: companyId ?? null, itemId, locationId, quantity: String(delta), updatedAt: new Date() } as StockQuant;
+    this.stockQuants.set(id, rec);
+    return rec;
+  }
+
+  // Shared move-application logic (used by createStockMove and validateStockTransfer)
+  private async applyStockMove(move: StockMove): Promise<void> {
+    const qty = Number(move.quantity) || 0;
+    if (qty <= 0) return;
+    const fromLoc = move.fromLocationId ? await this.getStockLocation(move.fromLocationId) : undefined;
+    const toLoc = move.toLocationId ? await this.getStockLocation(move.toLocationId) : undefined;
+    const fromInternal = fromLoc?.type === "internal";
+    const toInternal = toLoc?.type === "internal";
+    if (fromInternal && move.fromLocationId) await this.adjustStockQuant(move.companyId, move.itemId, move.fromLocationId, -qty);
+    if (toInternal && move.toLocationId) await this.adjustStockQuant(move.companyId, move.itemId, move.toLocationId, qty);
+    const globalDelta = (toInternal ? qty : 0) - (fromInternal ? qty : 0);
+    if (globalDelta !== 0) {
+      try {
+        const numericId = Number(move.itemId);
+        if (!Number.isNaN(numericId)) {
+          const item = await this.getInventoryItem(numericId);
+          if (item) await this.updateInventoryItem(numericId, { quantity: (Number(item.quantity) || 0) + globalDelta } as any);
+        }
+      } catch { /* global qty sync is best-effort */ }
+    }
+  }
+
+  // Stock Moves
+  async getAllStockMoves(companyId?: number): Promise<StockMove[]> {
+    const all = Array.from(this.stockMoves.values()).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return companyId ? all.filter(m => m.companyId === companyId) : all;
+  }
+  async createStockMove(insert: InsertStockMove): Promise<StockMove> {
+    const id = this.stockMoveIdCounter++;
+    const rec = { id, createdAt: new Date(), status: insert.status ?? "done", type: insert.type ?? "internal", ...insert } as StockMove;
+    this.stockMoves.set(id, rec);
+    if (rec.status === "done") await this.applyStockMove(rec);
+    return rec;
+  }
+  async deleteStockMove(id: number): Promise<boolean> { return this.stockMoves.delete(id); }
+
+  // Stock Transfers
+  async getAllStockTransfers(companyId?: number): Promise<StockTransfer[]> {
+    const all = Array.from(this.stockTransfers.values()).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return companyId ? all.filter(t => t.companyId === companyId) : all;
+  }
+  async getStockTransfer(id: number): Promise<StockTransfer | undefined> { return this.stockTransfers.get(id); }
+  async createStockTransfer(insert: InsertStockTransfer): Promise<StockTransfer> {
+    const id = this.stockTransferIdCounter++;
+    const rec = { id, createdAt: new Date(), status: insert.status ?? "draft", type: insert.type ?? "internal", ...insert } as StockTransfer;
+    this.stockTransfers.set(id, rec);
+    return rec;
+  }
+  async updateStockTransfer(id: number, updates: Partial<InsertStockTransfer>): Promise<StockTransfer | undefined> {
+    const existing = this.stockTransfers.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...updates } as StockTransfer;
+    this.stockTransfers.set(id, updated);
+    return updated;
+  }
+  async deleteStockTransfer(id: number): Promise<boolean> { return this.stockTransfers.delete(id); }
+  async validateStockTransfer(id: number): Promise<StockTransfer | undefined> {
+    const transfer = this.stockTransfers.get(id);
+    if (!transfer) return undefined;
+    if (transfer.status === "done") return transfer;
+    const lines: any[] = Array.isArray(transfer.items) ? transfer.items : [];
+    for (const line of lines) {
+      const itemId = line.itemId != null ? String(line.itemId) : "";
+      const quantity = Number(line.quantity) || 0;
+      if (!itemId || quantity <= 0) continue;
+      await this.createStockMove({
+        companyId: transfer.companyId,
+        transferId: id,
+        itemId,
+        fromLocationId: transfer.fromLocationId ?? null,
+        toLocationId: transfer.toLocationId ?? null,
+        quantity: String(quantity),
+        type: transfer.type,
+        reference: transfer.reference,
+        date: transfer.scheduledDate ?? new Date().toISOString().slice(0, 10),
+        status: "done",
+      } as any);
+    }
+    const updated = { ...transfer, status: "done" } as StockTransfer;
+    this.stockTransfers.set(id, updated);
+    return updated;
+  }
+
+  // Reorder Rules
+  async getAllReorderRules(companyId?: number): Promise<ReorderRule[]> {
+    const all = Array.from(this.reorderRules.values());
+    return companyId ? all.filter(r => r.companyId === companyId) : all;
+  }
+  async createReorderRule(insert: InsertReorderRule): Promise<ReorderRule> {
+    const id = this.reorderRuleIdCounter++;
+    const rec = { id, createdAt: new Date(), isActive: insert.isActive ?? true, ...insert } as ReorderRule;
+    this.reorderRules.set(id, rec);
+    return rec;
+  }
+  async updateReorderRule(id: number, updates: Partial<InsertReorderRule>): Promise<ReorderRule | undefined> {
+    const existing = this.reorderRules.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...updates } as ReorderRule;
+    this.reorderRules.set(id, updated);
+    return updated;
+  }
+  async deleteReorderRule(id: number): Promise<boolean> { return this.reorderRules.delete(id); }
 
   // Quotation methods
   async getQuotation(id: number): Promise<Quotation | undefined> {
@@ -1853,12 +2664,22 @@ export class JSONFileStorage implements IStorage {
         ? {
             ...(existingSettings?.integrations || {}),
             ...settings.integrations,
-            // Deep merge indiaMart if both exist
-            indiaMart: settings.integrations.indiaMart
-              ? { ...(existingSettings?.integrations?.indiaMart || {}), ...settings.integrations.indiaMart }
+            indiaMart: (settings.integrations as any).indiaMart
+              ? { ...(existingSettings?.integrations?.indiaMart || {}), ...(settings.integrations as any).indiaMart }
               : existingSettings?.integrations?.indiaMart
           }
         : existingSettings?.integrations,
+      moduleSettings: (settings as any).moduleSettings
+        ? {
+            ...((existingSettings as any)?.moduleSettings || {}),
+            ...Object.fromEntries(
+              Object.entries((settings as any).moduleSettings).map(([k, v]) => [
+                k,
+                { ...((existingSettings as any)?.moduleSettings?.[k] || {}), ...(v as any) }
+              ])
+            )
+          }
+        : (existingSettings as any)?.moduleSettings,
       updatedAt: new Date()
     };
     

@@ -1,14 +1,18 @@
 import { JSONFileStorage, IStorage } from './storage';
 import { MongoDBStorage } from './mongodb-storage';
+import { DynamoDBStorage } from './dynamodb-storage';
 import { config } from './config';
-
-// Environment variable to switch between storage types
-const USE_MONGODB = config.USE_MONGODB;
 
 let storage: IStorage;
 
 export async function initializeStorage(): Promise<IStorage> {
-  if (USE_MONGODB) {
+  if (config.USE_DYNAMODB) {
+    console.log('🔗 Initializing DynamoDB storage (eu-north-1)...');
+    const db = new DynamoDBStorage();
+    await db.initialize();
+    storage = db;
+    console.log('✅ DynamoDB storage initialized');
+  } else if (config.USE_MONGODB) {
     console.log('🔗 Initializing MongoDB storage...');
     const mongoStorage = new MongoDBStorage();
     await mongoStorage.initialize();
@@ -19,7 +23,7 @@ export async function initializeStorage(): Promise<IStorage> {
     storage = new JSONFileStorage();
     console.log('✅ JSON file storage initialized');
   }
-  
+
   return storage;
 }
 

@@ -16,6 +16,7 @@ export default function UsersPage() {
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
   const { data: users = [] } = useQuery<any[]>({ queryKey: ["/api/users"] });
+  const { data: companies = [] } = useQuery<any[]>({ queryKey: ["/api/companies"], enabled: currentUser?.role === 'superuser' });
   const [formOpen, setFormOpen] = useState(false);
   const [permissions, setPermissions] = useState<string[]>([]);
   
@@ -77,7 +78,7 @@ export default function UsersPage() {
 
   return (
     <Layout>
-      <div className="py-6 px-4 sm:px-6 lg:px-8">
+      <div className="page-body">
         <PageHeader title="User Management" subtitle="Approve users, create sub-users, and assign permissions" />
 
         <div className="mb-4 flex justify-between items-center">
@@ -203,7 +204,7 @@ export default function UsersPage() {
                         </Badge>
                       </td>
                       {currentUser?.role === 'superuser' && (
-                        <td className="p-2">{u.companyId ? `Company ${u.companyId}` : 'No Company'}</td>
+                        <td className="p-2">{u.companyId ? ((companies as any[]).find((c: any) => c.id === u.companyId)?.name || `Company ${u.companyId}`) : 'No Company'}</td>
                       )}
                       <td className="p-2">
                         <Badge variant={u.isActive ? 'default' : 'destructive'}>

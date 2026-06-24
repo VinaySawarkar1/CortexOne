@@ -1,18 +1,113 @@
-import { ReactNode } from "react";
+import { ReactNode, useState, useEffect, useCallback } from "react";
 import { Link } from "wouter";
 import Sidebar from "./sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+  DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Bell, Plus, Search, ChevronDown, LogOut, User, FileText, ShoppingCart } from "lucide-react";
+import {
+  Bell, Plus, Search, ChevronDown, LogOut, User,
+  FileText, ShoppingCart, Loader2, Settings,
+  LogIn, LogOut as LogOutIcon, MapPin, Clock, Timer,
+} from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+
+// ── Clock Widget ──────────────────────────────────────────────────────────────
+function formatSeconds(s: number) {
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+  return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(sec).padStart(2,"0")}`;
+}
+
+function ClockWidget() {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const [elapsed, setElapsed] = useState(0);
+  const [gettingLoc, setGettingLoc] = useState(false);
+
+  const { data: punch } = useQuery<any>({
+    queryKey: ["/api/my/today-punch"],
+    queryFn: async () => (await fetch("/api/my/today-punch", { credentials: "include" })).json(),
+    refetchInterval: 30000,
+  });
+
+  // Live timer
+  useEffect(() => {
+    if (!punch?.clockedIn) { setElapsed(punch?.workSeconds || 0); return; }
+    setElapsed(punch?.workSeconds || 0);
+    const t = setInterval(() => setElapsed(e => e + 1), 1000);
+    return () => clearInterval(t);
+  }, [punch?.clockedIn, punch?.workSeconds]);
+
+  const getLocation = (): Promise<{ lat?: number; lng?: number; address?: string }> =>
+    new Promise(resolve => {
+      if (!navigator.geolocation) return resolve({});
+      navigator.geolocation.getCurrentPosition(
+        pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => resolve({}),
+        { timeout: 5000 }
+      );
+    });
+
+  const clockInM = useMutation({
+    mutationFn: async () => {
+      setGettingLoc(true);
+      const loc = await getLocation();
+      setGettingLoc(false);
+      return (await apiRequest("POST", "/api/my/clock-in", loc)).json();
+    },
+    onSuccess: (d) => { qc.invalidateQueries({ queryKey: ["/api/my/today-punch"] }); toast({ title: d.message || "Clocked in" }); },
+    onError: (e: Error) => { setGettingLoc(false); toast({ title: "Error", description: e.message, variant: "destructive" }); },
+  });
+
+  const clockOutM = useMutation({
+    mutationFn: async () => {
+      setGettingLoc(true);
+      const loc = await getLocation();
+      setGettingLoc(false);
+      return (await apiRequest("POST", "/api/my/clock-out", loc)).json();
+    },
+    onSuccess: (d) => { qc.invalidateQueries({ queryKey: ["/api/my/today-punch"] }); toast({ title: d.message || "Clocked out" }); },
+    onError: (e: Error) => { setGettingLoc(false); toast({ title: "Error", description: e.message, variant: "destructive" }); },
+  });
+
+  const loading = clockInM.isPending || clockOutM.isPending || gettingLoc;
+
+  return (
+    <div className="flex items-center gap-2">
+      {punch?.clockedIn ? (
+        <>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-50 border border-green-200 rounded-lg">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            <Timer className="h-3 w-3 text-green-600" />
+            <span className="text-xs font-bold text-green-700 font-mono tabular-nums">{formatSeconds(elapsed)}</span>
+          </div>
+          <Button size="sm" onClick={() => clockOutM.mutate()} disabled={loading}
+            className="h-7 px-2.5 text-[11px] font-bold bg-red-500 hover:bg-red-600 text-white border-0 gap-1 rounded-lg shadow-sm">
+            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <LogOutIcon className="h-3 w-3" />}Clock Out
+          </Button>
+        </>
+      ) : (
+        <>
+          {elapsed > 0 && (
+            <div className="flex items-center gap-1 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg">
+              <Clock className="h-3 w-3 text-slate-500" />
+              <span className="text-[10px] font-semibold text-slate-500 font-mono">{formatSeconds(elapsed)}</span>
+            </div>
+          )}
+          <Button size="sm" onClick={() => clockInM.mutate()} disabled={loading}
+            className="h-7 px-2.5 text-[11px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white border-0 gap-1 rounded-lg shadow-sm">
+            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <LogIn className="h-3 w-3" />}Clock In
+          </Button>
+        </>
+      )}
+    </div>
+  );
+}
 
 interface LayoutProps {
   children: ReactNode;
@@ -23,129 +118,152 @@ export default function Layout({ children }: LayoutProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
       </div>
     );
   }
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
-  const can = (perm: keyof NonNullable<typeof user> & string) => {
-    // Basic check placeholder; will be extended when permissions are stored
-    return true;
-  };
-
-  const initials = (user.name || user.username || "").split(" ").map(s => s[0]).slice(0,2).join("").toUpperCase();
+  const initials = (user.name || user.username || "")
+    .split(" ")
+    .map((s: string) => s[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 
   return (
-    <div className="h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 flex overflow-hidden">
-      {/* Sidebar - Fixed position */}
-      <div className="w-64 glass-effect border-r border-gray-200/50 shadow-xl flex-shrink-0 h-screen fixed left-0 top-0 z-40">
+    /*
+     * Layout:
+     *   - Sidebar: fixed, left edge, full height
+     *   - Right column: fixed too (ml-60), has two rows:
+     *       1) Top header  — fixed height, never scrolls
+     *       2) Scroll area — flex-1, overflow-y-auto
+     *          └─ PageHeader inside pages uses sticky top-0
+     *             (relative to THIS scroll container, not the viewport)
+     */
+    <div className="flex h-screen overflow-hidden bg-slate-50">
+
+      {/* ── Sidebar ── */}
+      <aside className="fixed inset-y-0 left-0 z-40 w-60 shadow-xl flex-shrink-0">
         <Sidebar />
-      </div>
+      </aside>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col ml-64 overflow-hidden">
-        {/* Top Navigation Bar */}
-        <header className="sticky top-0 z-30 glass-effect border-b border-gray-200/50 shadow-sm flex-shrink-0">
-          <div className="px-6 py-3 flex items-center gap-4">
-            {/* Brand */}
-            <Link href="/">
-              <div className="flex items-center gap-2 text-gray-900 hover:opacity-90 cursor-pointer select-none group">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 text-white flex items-center justify-center font-semibold shadow-md group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
-                  C
-                </div>
-                <span className="hidden sm:block text-base font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  BizSuite
-                </span>
-              </div>
-            </Link>
+      {/* ── Right column ── */}
+      <div className="fixed inset-y-0 right-0 flex flex-col" style={{ left: 240 }}>
 
-            {/* Search */}
-            <div className="flex-1 max-w-2xl">
-              <div className="relative group">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
-                <Input
-                  className="pl-9 h-9 bg-white/80 backdrop-blur-sm border-gray-200 focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-200 transition-all duration-300 shadow-sm"
-                  placeholder="Search leads, customers, quotations..."
-                />
-                <div className="hidden md:flex items-center gap-1 absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-gray-400">
-                  <kbd className="px-1.5 py-0.5 rounded border bg-white/50 backdrop-blur-sm">Ctrl</kbd>
-                  +
-                  <kbd className="px-1.5 py-0.5 rounded border bg-white/50 backdrop-blur-sm">K</kbd>
-                </div>
-              </div>
-            </div>
+        {/* Top bar — sits outside the scroll area, so it never scrolls */}
+        <header
+          className="flex-shrink-0 flex items-center gap-3 px-5 bg-white border-b border-slate-200 z-30"
+          style={{ height: 56, boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}
+        >
+          {/* Global search */}
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+            <Input
+              placeholder="Search anything…"
+              className="pl-8 h-8 text-xs bg-slate-50 border-slate-200 rounded-lg focus:bg-white focus:border-indigo-400 transition-all"
+            />
+          </div>
 
-            {/* Quick Actions */}
+          <div className="flex items-center gap-1 ml-auto">
+            {/* Quick-create */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button className="h-9 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-md hover:shadow-lg transition-all duration-300" variant="default">
-                  <Plus className="h-4 w-4 mr-2" /> New
+                <Button
+                  size="sm"
+                  className="h-8 px-3 text-xs font-semibold rounded-lg shadow-sm border-0"
+                  style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" />New
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Quick create</DropdownMenuLabel>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel className="text-[11px] text-slate-400 font-medium pb-1">Quick Create</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <Link href="/leads">
-                  <DropdownMenuItem>
-                    <User className="mr-2 h-4 w-4" /> Lead
+                  <DropdownMenuItem className="text-xs cursor-pointer gap-2">
+                    <User className="h-3.5 w-3.5 text-indigo-500" />Lead
                   </DropdownMenuItem>
                 </Link>
                 <Link href="/quotations/new">
-                  <DropdownMenuItem>
-                    <FileText className="mr-2 h-4 w-4" /> Quotation
+                  <DropdownMenuItem className="text-xs cursor-pointer gap-2">
+                    <FileText className="h-3.5 w-3.5 text-emerald-500" />Quotation
                   </DropdownMenuItem>
                 </Link>
                 <Link href="/orders">
-                  <DropdownMenuItem>
-                    <ShoppingCart className="mr-2 h-4 w-4" /> Order
+                  <DropdownMenuItem className="text-xs cursor-pointer gap-2">
+                    <ShoppingCart className="h-3.5 w-3.5 text-amber-500" />Order
                   </DropdownMenuItem>
                 </Link>
               </DropdownMenuContent>
             </DropdownMenu>
 
+            {/* Clock In/Out Widget */}
+            <ClockWidget />
+
+            <div className="w-px h-5 bg-slate-200" />
+
             {/* Notifications */}
-            <Button variant="ghost" size="icon" className="h-9 w-9 text-gray-500">
-              <Bell className="h-5 w-5" />
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100">
+              <Bell className="h-4 w-4" />
             </Button>
 
-            {/* User Menu */}
+            {/* Settings */}
+            <Link href="/settings">
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100">
+                <Settings className="h-4 w-4" />
+              </Button>
+            </Link>
+
+            {/* User menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-9 px-2 hover:bg-blue-50/50 transition-colors duration-300 rounded-lg">
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full text-white flex items-center justify-center text-xs font-semibold mr-2 shadow-md ring-2 ring-blue-100">
+                <Button variant="ghost" className="h-8 px-2 rounded-lg hover:bg-slate-100 flex items-center gap-2">
+                  <div
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold ring-2 ring-indigo-100 flex-shrink-0"
+                    style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}
+                  >
                     {initials || "U"}
                   </div>
-                  <div className="hidden sm:flex flex-col items-start mr-1">
-                    <span className="text-sm leading-4 font-semibold text-gray-900">{user.name || user.username}</span>
-                    <span className="text-[11px] leading-3 text-gray-500 capitalize">{user.role}</span>
+                  <div className="hidden sm:flex flex-col items-start">
+                    <span className="text-xs font-semibold text-slate-800 leading-4 max-w-[96px] truncate">
+                      {user.name || user.username}
+                    </span>
+                    <span className="text-[10px] text-slate-400 capitalize leading-3">{user.role}</span>
                   </div>
-                  <ChevronDown className="h-4 w-4 text-gray-400" />
+                  <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Account</DropdownMenuLabel>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuLabel className="text-xs">
+                  <div className="font-semibold text-slate-900">{user.name || user.username}</div>
+                  <div className="text-slate-400 font-normal capitalize mt-0.5">{user.role}</div>
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <Link href="/settings">
-                  <DropdownMenuItem>Settings</DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs cursor-pointer gap-2">
+                    <Settings className="h-3.5 w-3.5" />Settings
+                  </DropdownMenuItem>
                 </Link>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => logoutMutation.mutate()}>
-                  <LogOut className="mr-2 h-4 w-4" /> Logout
+                <DropdownMenuItem
+                  className="text-xs text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer gap-2"
+                  onClick={() => logoutMutation.mutate()}
+                >
+                  <LogOut className="h-3.5 w-3.5" />Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </header>
 
-        {/* Page Content */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-content">
+        {/* ── Scroll area — PageHeader inside pages is sticky top-0 here ── */}
+        <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-slate-50 scrollbar-content">
           {children}
         </main>
+
       </div>
     </div>
   );

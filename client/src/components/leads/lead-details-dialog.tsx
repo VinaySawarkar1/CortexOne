@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import ActivityPanel from "@/components/crm/activity-panel";
 import { 
   Select,
   SelectContent,
@@ -254,6 +255,20 @@ export default function LeadDetailsDialog({ lead, open, onOpenChange }: LeadDeta
             </CardContent>
           </Card>
 
+          {/* Scheduled Activities */}
+          {lead?.id && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  Activities
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ActivityPanel leadId={lead.id} />
+              </CardContent>
+            </Card>
+          )}
 
           {/* Discussions */}
           <Card>

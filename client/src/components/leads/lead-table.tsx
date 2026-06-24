@@ -10,7 +10,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash, ShoppingCart, FileText, User, Eye, UserPlus } from "lucide-react";
+import { Edit, Trash, ShoppingCart, FileText, User, Eye, UserPlus, Star } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 
@@ -114,6 +114,7 @@ export default function LeadTable({ leads, onEdit, onDelete, onConvertToOrder, o
           <TableRow className="border-b border-gray-200 bg-gray-50">
             <TableHead className="font-semibold text-gray-700">Lead</TableHead>
             <TableHead className="font-semibold text-gray-700">Company</TableHead>
+            <TableHead className="font-semibold text-gray-700">Rating</TableHead>
             <TableHead className="font-semibold text-gray-700">Category</TableHead>
             <TableHead className="font-semibold text-gray-700">Source</TableHead>
             <TableHead className="font-semibold text-gray-700">Status</TableHead>
@@ -138,6 +139,13 @@ export default function LeadTable({ leads, onEdit, onDelete, onConvertToOrder, o
                 </TableCell>
                 <TableCell>
                   <div className="text-gray-900 font-medium">{lead.company}</div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-0.5">
+                    {[1,2,3,4,5].map(n => (
+                      <Star key={n} className={`h-3.5 w-3.5 ${(lead as any).rating >= n ? "text-yellow-400 fill-yellow-400" : "text-gray-200"}`} />
+                    ))}
+                  </div>
                 </TableCell>
                 <TableCell>
                   {getCategoryBadge(lead.category)}

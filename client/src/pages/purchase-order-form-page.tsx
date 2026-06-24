@@ -165,7 +165,7 @@ export default function PurchaseOrderFormPage() {
 
   return (
     <Layout>
-      <div className="py-6 px-4 sm:px-6 lg:px-8">
+      <div className="page-body">
         <PageHeader
           title={isEditMode ? "Edit Purchase Order" : "Create Purchase Order"}
           subtitle={isEditMode ? "Modify purchase order details" : "Create a new purchase order"}

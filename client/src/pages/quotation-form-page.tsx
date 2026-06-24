@@ -269,7 +269,7 @@ export default function QuotationFormPage() {
 
   return (
     <Layout>
-      <div className="py-6 px-4 sm:px-6 lg:px-8">
+      <div className="page-body">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-4">

@@ -17,7 +17,25 @@ import {
   insertSalesTargetSchema,
   insertLeadDiscussionSchema,
   insertLeadCategorySchema,
-  insertLeadSourceSchema
+  insertLeadSourceSchema,
+  insertCrmStageSchema,
+  insertCrmLostReasonSchema,
+  insertCrmActivitySchema,
+  insertCrmEmailTemplateSchema,
+  insertDepartmentSchema,
+  insertDesignationSchema,
+  insertEmployeeSchema,
+  insertAttendanceSchema,
+  insertLeaveTypeSchema,
+  insertLeaveRequestSchema,
+  insertPayslipSchema,
+  insertWarehouseSchema,
+  insertStockLocationSchema,
+  insertStockMoveSchema,
+  insertStockTransferSchema,
+  insertReorderRuleSchema,
+  insertSupportTicketSchema,
+  insertContractSchema
 } from "@shared/schema";
 import { pdfGenerator } from "./pdf-generator";
 import type { Request, Response } from "express";
@@ -197,6 +215,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updated = await getStorage().updateCompany(companyId, updates);
       if (!updated) return res.status(404).json({ message: "Company not found" });
       res.json(updated);
+    } catch (err) { next(err); }
+  });
+
+  // Superuser: reject/delete pending company
+  app.delete("/api/companies/:companyId", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const me = await getStorage().getUser((req.user as any).id);
+      if (!me || me.role !== 'superuser') return res.status(403).json({ message: "Forbidden" });
+      const companyId = parseInt(req.params.companyId);
+      const company = await getStorage().getCompany(companyId);
+      if (!company) return res.status(404).json({ message: "Company not found" });
+      // Mark company as rejected and deactivate its users
+      await getStorage().updateCompany(companyId, { status: 'rejected' });
+      const allUsers = await getStorage().getAllUsers();
+      const companyUsers = allUsers.filter((u: any) => String(u.companyId) === String(companyId));
+      for (const u of companyUsers) {
+        await getStorage().updateUser(u.id, { isActive: false });
+      }
+      res.json({ message: "Company rejected" });
     } catch (err) { next(err); }
   });
 
@@ -643,7 +681,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
 
       const id = parseInt(req.params.id);
-      const leadData = insertLeadSchema.partial().parse(req.body);
+      const leadData = insertLeadSchema.partial().parse(req.body) as any;
+
+      // Stamp close date server-side when an opportunity is won or lost
+      if ((leadData.status === 'won' || leadData.status === 'lost') && !leadData.closedAt) {
+        leadData.closedAt = new Date();
+      }
 
       const storage = getStorage();
       const user = req.user as any;
@@ -738,7 +781,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentTerms: "30 days",
         status: "active",
         notes: lead.notes || "",
-      });
+        companyId: user.companyId,
+      } as any);
       await storage.updateLead(id, { status: "converted" });
       res.json({ success: true, customer });
     } catch (err) {
@@ -886,6 +930,1441 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) { next(error); }
   });
 
+  // ==================== CRM Pipeline Stages ====================
+  app.get("/api/crm-stages", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      const list = await getStorage().getAllCrmStages(user.role === 'superuser' ? undefined : user.companyId);
+      res.json(list);
+    } catch (error) { next(error); }
+  });
+
+  app.post("/api/crm-stages", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      const payload = insertCrmStageSchema.partial().parse(req.body);
+      if (!payload.name) return res.status(400).json({ message: "name is required" });
+      const created = await getStorage().createCrmStage({
+        name: payload.name,
+        sequence: payload.sequence ?? 0,
+        probability: payload.probability ?? 0,
+        isWon: payload.isWon ?? false,
+        isActive: payload.isActive ?? true,
+        companyId: user.companyId,
+      });
+      res.status(201).json(created);
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ message: "Validation error", errors: error.errors });
+      next(error);
+    }
+  });
+
+  app.put("/api/crm-stages/:id", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid stage ID" });
+      const updates = insertCrmStageSchema.partial().parse(req.body);
+      const updated = await getStorage().updateCrmStage(id, updates);
+      if (!updated) return res.status(404).json({ message: "Stage not found" });
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ message: "Validation error", errors: error.errors });
+      next(error);
+    }
+  });
+
+  app.delete("/api/crm-stages/:id", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid stage ID" });
+      const deleted = await getStorage().deleteCrmStage(id);
+      if (!deleted) return res.status(404).json({ message: "Stage not found" });
+      res.json({ success: true });
+    } catch (error) { next(error); }
+  });
+
+  // ==================== CRM Lost Reasons ====================
+  app.get("/api/crm-lost-reasons", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      const list = await getStorage().getAllCrmLostReasons(user.role === 'superuser' ? undefined : user.companyId);
+      res.json(list);
+    } catch (error) { next(error); }
+  });
+
+  app.post("/api/crm-lost-reasons", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      const payload = insertCrmLostReasonSchema.partial().parse(req.body);
+      if (!payload.name) return res.status(400).json({ message: "name is required" });
+      const created = await getStorage().createCrmLostReason({
+        name: payload.name,
+        isActive: payload.isActive ?? true,
+        companyId: user.companyId,
+      });
+      res.status(201).json(created);
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ message: "Validation error", errors: error.errors });
+      next(error);
+    }
+  });
+
+  app.put("/api/crm-lost-reasons/:id", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid reason ID" });
+      const updates = insertCrmLostReasonSchema.partial().parse(req.body);
+      const updated = await getStorage().updateCrmLostReason(id, updates);
+      if (!updated) return res.status(404).json({ message: "Lost reason not found" });
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ message: "Validation error", errors: error.errors });
+      next(error);
+    }
+  });
+
+  app.delete("/api/crm-lost-reasons/:id", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid reason ID" });
+      const deleted = await getStorage().deleteCrmLostReason(id);
+      if (!deleted) return res.status(404).json({ message: "Lost reason not found" });
+      res.json({ success: true });
+    } catch (error) { next(error); }
+  });
+
+  // ==================== CRM Activities ====================
+  app.get("/api/crm-activities", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      const list = await getStorage().getAllCrmActivities(user.role === 'superuser' ? undefined : user.companyId);
+      res.json(list);
+    } catch (error) { next(error); }
+  });
+
+  app.post("/api/crm-activities", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      const { dueDate: rawDueDate, completedAt: _ca, ...rest } = req.body || {};
+      const payload = insertCrmActivitySchema.partial().parse(rest);
+      if (!payload.summary) return res.status(400).json({ message: "summary is required" });
+      if (!payload.leadId) return res.status(400).json({ message: "leadId is required" });
+      const created = await getStorage().createCrmActivity({
+        ...payload,
+        companyId: user.companyId,
+        summary: payload.summary!,
+        leadId: payload.leadId!,
+        dueDate: rawDueDate ? new Date(rawDueDate) : undefined,
+        createdBy: payload.createdBy || user.username,
+      } as any);
+      res.status(201).json(created);
+    } catch (error) { next(error); }
+  });
+
+  app.get("/api/leads/:leadId/activities", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const leadId = parseInt(req.params.leadId);
+      if (isNaN(leadId)) return res.status(400).json({ message: "Invalid lead ID" });
+      const list = await getStorage().getCrmActivities(leadId);
+      res.json(list);
+    } catch (error) { next(error); }
+  });
+
+  app.post("/api/leads/:leadId/activities", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      const leadId = parseInt(req.params.leadId);
+      if (isNaN(leadId)) return res.status(400).json({ message: "Invalid lead ID" });
+      const lead = await getStorage().getLead(leadId);
+      if (!lead) return res.status(404).json({ message: "Lead not found" });
+      if (user.role !== 'superuser' && lead.companyId !== user.companyId) {
+        return res.status(403).json({ message: "Forbidden: Lead belongs to different company" });
+      }
+      // Strip date fields before zod parse (drizzle-zod expects Date instances, client sends strings)
+      const { dueDate: rawDueDate, completedAt: _ca, ...rest } = req.body || {};
+      const payload = insertCrmActivitySchema.partial().parse(rest);
+      if (!payload.summary) return res.status(400).json({ message: "summary is required" });
+      const created = await getStorage().createCrmActivity({
+        leadId,
+        companyId: lead.companyId,
+        activityType: payload.activityType ?? 'todo',
+        summary: payload.summary,
+        notes: payload.notes ?? null,
+        dueDate: rawDueDate ? new Date(rawDueDate) : null,
+        assignedTo: payload.assignedTo ?? user.username ?? String(user.id),
+        status: payload.status ?? 'planned',
+        createdBy: user.username ?? String(user.id),
+      } as any);
+      res.status(201).json(created);
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ message: "Validation error", errors: error.errors });
+      next(error);
+    }
+  });
+
+  app.put("/api/crm-activities/:id", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid activity ID" });
+      // Strip date fields before zod parse (drizzle-zod expects Date instances, client sends strings)
+      const { dueDate: rawDueDate, completedAt: rawCompletedAt, ...rest } = req.body || {};
+      const updates = insertCrmActivitySchema.partial().parse(rest) as any;
+      if (rawDueDate !== undefined) updates.dueDate = rawDueDate ? new Date(rawDueDate) : null;
+      if (rawCompletedAt !== undefined) updates.completedAt = rawCompletedAt ? new Date(rawCompletedAt) : null;
+      // Mark-done convenience: if status set to done and no completedAt, stamp it
+      if (updates.status === 'done' && !updates.completedAt) updates.completedAt = new Date();
+      const updated = await getStorage().updateCrmActivity(id, updates);
+      if (!updated) return res.status(404).json({ message: "Activity not found" });
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ message: "Validation error", errors: error.errors });
+      next(error);
+    }
+  });
+
+  app.delete("/api/crm-activities/:id", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid activity ID" });
+      const deleted = await getStorage().deleteCrmActivity(id);
+      if (!deleted) return res.status(404).json({ message: "Activity not found" });
+      res.json({ success: true });
+    } catch (error) { next(error); }
+  });
+
+  // ==================== CRM EMAIL TEMPLATES ====================
+  app.get("/api/crm-email-templates", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      const list = await getStorage().getCrmEmailTemplates(user.role === 'superuser' ? undefined : user.companyId);
+      res.json(list);
+    } catch (error) { next(error); }
+  });
+
+  app.post("/api/crm-email-templates", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      const payload = insertCrmEmailTemplateSchema.parse({ ...req.body, companyId: user.companyId, createdBy: user.username });
+      const created = await getStorage().createCrmEmailTemplate(payload);
+      res.status(201).json(created);
+    } catch (error) { next(error); }
+  });
+
+  app.put("/api/crm-email-templates/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      const updates = insertCrmEmailTemplateSchema.partial().parse(req.body);
+      const updated = await getStorage().updateCrmEmailTemplate(id, updates);
+      if (!updated) return res.status(404).json({ message: "Template not found" });
+      res.json(updated);
+    } catch (error) { next(error); }
+  });
+
+  app.delete("/api/crm-email-templates/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      const deleted = await getStorage().deleteCrmEmailTemplate(id);
+      if (!deleted) return res.status(404).json({ message: "Template not found" });
+      res.json({ success: true });
+    } catch (error) { next(error); }
+  });
+
+  // CRM Analytics endpoint
+  app.get("/api/crm-analytics", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      const companyId = user.role === 'superuser' ? undefined : user.companyId;
+      const [leads, activities, stages] = await Promise.all([
+        getStorage().getLeads(companyId),
+        getStorage().getCrmActivities(companyId),
+        getStorage().getCrmStages(companyId),
+      ]);
+
+      const total = leads.length;
+      const opportunities = leads.filter((l: any) => l.isOpportunity).length;
+      const won = leads.filter((l: any) => l.opportunityStage === 'won').length;
+      const lost = leads.filter((l: any) => l.opportunityStage === 'lost').length;
+      const winRate = (won + lost) > 0 ? Math.round((won / (won + lost)) * 100) : 0;
+
+      const pipelineValue = leads
+        .filter((l: any) => l.isOpportunity && l.opportunityStage !== 'won' && l.opportunityStage !== 'lost')
+        .reduce((sum: number, l: any) => sum + (parseFloat(l.expectedValue) || 0), 0);
+
+      const weightedValue = leads
+        .filter((l: any) => l.isOpportunity && l.opportunityStage !== 'won' && l.opportunityStage !== 'lost')
+        .reduce((sum: number, l: any) => {
+          const prob = (l.probability || 0) / 100;
+          return sum + (parseFloat(l.expectedValue) || 0) * prob;
+        }, 0);
+
+      const today = new Date().toISOString().split('T')[0];
+      const overdueActivities = activities.filter((a: any) => {
+        if (a.status === 'done') return false;
+        if (!a.dueDate) return false;
+        return new Date(a.dueDate) < new Date();
+      }).length;
+
+      const todayActivities = activities.filter((a: any) => {
+        if (a.status === 'done') return false;
+        if (!a.dueDate) return false;
+        return new Date(a.dueDate).toISOString().split('T')[0] === today;
+      }).length;
+
+      // Source breakdown
+      const bySource: Record<string, number> = {};
+      leads.forEach((l: any) => {
+        const s = l.source || 'other';
+        bySource[s] = (bySource[s] || 0) + 1;
+      });
+
+      // Stage breakdown with value
+      const byStage = stages.map((s: any) => ({
+        id: s.id,
+        name: s.name,
+        count: leads.filter((l: any) => l.stageId === s.id).length,
+        value: leads.filter((l: any) => l.stageId === s.id)
+          .reduce((sum: number, l: any) => sum + (parseFloat(l.expectedValue) || 0), 0),
+      }));
+
+      // Monthly trend (last 6 months)
+      const monthlyTrend: Record<string, { leads: number; won: number }> = {};
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        monthlyTrend[key] = { leads: 0, won: 0 };
+      }
+      leads.forEach((l: any) => {
+        const d = new Date(l.createdAt);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        if (monthlyTrend[key]) {
+          monthlyTrend[key].leads++;
+          if (l.opportunityStage === 'won') monthlyTrend[key].won++;
+        }
+      });
+
+      res.json({
+        total, opportunities, won, lost, winRate,
+        pipelineValue, weightedValue,
+        overdueActivities, todayActivities,
+        bySource, byStage,
+        monthlyTrend: Object.entries(monthlyTrend).map(([month, data]) => ({ month, ...data })),
+        recentLeads: leads.slice(-5).reverse(),
+        topOpportunities: leads
+          .filter((l: any) => l.isOpportunity && l.opportunityStage !== 'won' && l.opportunityStage !== 'lost')
+          .sort((a: any, b: any) => (parseFloat(b.expectedValue) || 0) - (parseFloat(a.expectedValue) || 0))
+          .slice(0, 5),
+      });
+    } catch (error) { next(error); }
+  });
+
+  // ==================== MANUFACTURING ====================
+  app.get("/api/work-centres", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.json(await getStorage().getAllWorkCentres(user.role === 'superuser' ? undefined : user.companyId));
+    } catch (e) { next(e); }
+  });
+  app.post("/api/work-centres", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.status(201).json(await getStorage().createWorkCentre({ ...req.body, companyId: user.companyId }));
+    } catch (e) { next(e); }
+  });
+  app.put("/api/work-centres/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const result = await getStorage().updateWorkCentre(parseInt(req.params.id), req.body);
+      if (!result) return res.status(404).json({ message: "Not found" });
+      res.json(result);
+    } catch (e) { next(e); }
+  });
+  app.delete("/api/work-centres/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const deleted = await getStorage().deleteWorkCentre(parseInt(req.params.id));
+      if (!deleted) return res.status(404).json({ message: "Not found" });
+      res.json({ success: true });
+    } catch (e) { next(e); }
+  });
+
+  app.get("/api/boms", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.json(await getStorage().getAllBoms(user.role === 'superuser' ? undefined : user.companyId));
+    } catch (e) { next(e); }
+  });
+  app.post("/api/boms", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.status(201).json(await getStorage().createBom({ ...req.body, companyId: user.companyId }));
+    } catch (e) { next(e); }
+  });
+  app.put("/api/boms/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const result = await getStorage().updateBom(parseInt(req.params.id), req.body);
+      if (!result) return res.status(404).json({ message: "Not found" });
+      res.json(result);
+    } catch (e) { next(e); }
+  });
+  app.delete("/api/boms/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const deleted = await getStorage().deleteBom(parseInt(req.params.id));
+      if (!deleted) return res.status(404).json({ message: "Not found" });
+      res.json({ success: true });
+    } catch (e) { next(e); }
+  });
+  app.get("/api/boms/:id/lines", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      res.json(await getStorage().getAllBomLines(parseInt(req.params.id)));
+    } catch (e) { next(e); }
+  });
+  app.post("/api/bom-lines", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      res.status(201).json(await getStorage().createBomLine(req.body));
+    } catch (e) { next(e); }
+  });
+  app.put("/api/bom-lines/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const result = await getStorage().updateBomLine(parseInt(req.params.id), req.body);
+      if (!result) return res.status(404).json({ message: "Not found" });
+      res.json(result);
+    } catch (e) { next(e); }
+  });
+  app.delete("/api/bom-lines/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const deleted = await getStorage().deleteBomLine(parseInt(req.params.id));
+      if (!deleted) return res.status(404).json({ message: "Not found" });
+      res.json({ success: true });
+    } catch (e) { next(e); }
+  });
+
+  app.get("/api/production-orders", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.json(await getStorage().getAllProductionOrders(user.role === 'superuser' ? undefined : user.companyId));
+    } catch (e) { next(e); }
+  });
+  app.get("/api/production-orders/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const result = await getStorage().getProductionOrder(parseInt(req.params.id));
+      if (!result) return res.status(404).json({ message: "Not found" });
+      res.json(result);
+    } catch (e) { next(e); }
+  });
+  app.post("/api/production-orders", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.status(201).json(await getStorage().createProductionOrder({ ...req.body, companyId: user.companyId }));
+    } catch (e) { next(e); }
+  });
+  app.put("/api/production-orders/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const result = await getStorage().updateProductionOrder(parseInt(req.params.id), req.body);
+      if (!result) return res.status(404).json({ message: "Not found" });
+      res.json(result);
+    } catch (e) { next(e); }
+  });
+  app.delete("/api/production-orders/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const deleted = await getStorage().deleteProductionOrder(parseInt(req.params.id));
+      if (!deleted) return res.status(404).json({ message: "Not found" });
+      res.json({ success: true });
+    } catch (e) { next(e); }
+  });
+  app.post("/api/production-orders/:id/confirm", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const result = await getStorage().confirmProductionOrder(parseInt(req.params.id));
+      if (!result) return res.status(404).json({ message: "Not found" });
+      res.json(result);
+    } catch (e) { next(e); }
+  });
+
+  // ==================== PURCHASING ====================
+  app.get("/api/rfqs", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.json(await getStorage().getAllRfqs(user.role === 'superuser' ? undefined : user.companyId));
+    } catch (e) { next(e); }
+  });
+  app.get("/api/rfqs/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const result = await getStorage().getRfq(parseInt(req.params.id));
+      if (!result) return res.status(404).json({ message: "Not found" });
+      res.json(result);
+    } catch (e) { next(e); }
+  });
+  app.post("/api/rfqs", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.status(201).json(await getStorage().createRfq({ ...req.body, companyId: user.companyId }));
+    } catch (e) { next(e); }
+  });
+  app.put("/api/rfqs/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const result = await getStorage().updateRfq(parseInt(req.params.id), req.body);
+      if (!result) return res.status(404).json({ message: "Not found" });
+      res.json(result);
+    } catch (e) { next(e); }
+  });
+  app.delete("/api/rfqs/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const deleted = await getStorage().deleteRfq(parseInt(req.params.id));
+      if (!deleted) return res.status(404).json({ message: "Not found" });
+      res.json({ success: true });
+    } catch (e) { next(e); }
+  });
+
+  app.get("/api/grns", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.json(await getStorage().getAllGrns(user.role === 'superuser' ? undefined : user.companyId));
+    } catch (e) { next(e); }
+  });
+  app.get("/api/grns/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const result = await getStorage().getGrn(parseInt(req.params.id));
+      if (!result) return res.status(404).json({ message: "Not found" });
+      res.json(result);
+    } catch (e) { next(e); }
+  });
+  app.post("/api/grns", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.status(201).json(await getStorage().createGrn({ ...req.body, companyId: user.companyId }));
+    } catch (e) { next(e); }
+  });
+  app.put("/api/grns/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const result = await getStorage().updateGrn(parseInt(req.params.id), req.body);
+      if (!result) return res.status(404).json({ message: "Not found" });
+      res.json(result);
+    } catch (e) { next(e); }
+  });
+  app.delete("/api/grns/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const deleted = await getStorage().deleteGrn(parseInt(req.params.id));
+      if (!deleted) return res.status(404).json({ message: "Not found" });
+      res.json({ success: true });
+    } catch (e) { next(e); }
+  });
+  app.post("/api/grns/:id/validate", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const result = await getStorage().validateGrn(parseInt(req.params.id));
+      if (!result) return res.status(404).json({ message: "Not found" });
+      res.json(result);
+    } catch (e) { next(e); }
+  });
+
+  // ==================== SALES (new) ====================
+  app.get("/api/delivery-orders", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.json(await getStorage().getAllDeliveryOrders(user.role === 'superuser' ? undefined : user.companyId));
+    } catch (e) { next(e); }
+  });
+  app.get("/api/delivery-orders/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const result = await getStorage().getDeliveryOrder(parseInt(req.params.id));
+      if (!result) return res.status(404).json({ message: "Not found" });
+      res.json(result);
+    } catch (e) { next(e); }
+  });
+  app.post("/api/delivery-orders", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.status(201).json(await getStorage().createDeliveryOrder({ ...req.body, companyId: user.companyId }));
+    } catch (e) { next(e); }
+  });
+  app.put("/api/delivery-orders/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const result = await getStorage().updateDeliveryOrder(parseInt(req.params.id), req.body);
+      if (!result) return res.status(404).json({ message: "Not found" });
+      res.json(result);
+    } catch (e) { next(e); }
+  });
+  app.delete("/api/delivery-orders/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const deleted = await getStorage().deleteDeliveryOrder(parseInt(req.params.id));
+      if (!deleted) return res.status(404).json({ message: "Not found" });
+      res.json({ success: true });
+    } catch (e) { next(e); }
+  });
+  app.post("/api/delivery-orders/:id/validate", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const result = await getStorage().validateDeliveryOrder(parseInt(req.params.id));
+      if (!result) return res.status(404).json({ message: "Not found" });
+      res.json(result);
+    } catch (e) { next(e); }
+  });
+
+  app.get("/api/price-lists", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.json(await getStorage().getAllPriceLists(user.role === 'superuser' ? undefined : user.companyId));
+    } catch (e) { next(e); }
+  });
+  app.post("/api/price-lists", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.status(201).json(await getStorage().createPriceList({ ...req.body, companyId: user.companyId }));
+    } catch (e) { next(e); }
+  });
+  app.put("/api/price-lists/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const result = await getStorage().updatePriceList(parseInt(req.params.id), req.body);
+      if (!result) return res.status(404).json({ message: "Not found" });
+      res.json(result);
+    } catch (e) { next(e); }
+  });
+  app.delete("/api/price-lists/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const deleted = await getStorage().deletePriceList(parseInt(req.params.id));
+      if (!deleted) return res.status(404).json({ message: "Not found" });
+      res.json({ success: true });
+    } catch (e) { next(e); }
+  });
+
+  // ==================== HR (new) ====================
+  app.get("/api/appraisals", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.json(await getStorage().getAllAppraisals(user.role === 'superuser' ? undefined : user.companyId));
+    } catch (e) { next(e); }
+  });
+  app.get("/api/appraisals/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const result = await getStorage().getAppraisal(parseInt(req.params.id));
+      if (!result) return res.status(404).json({ message: "Not found" });
+      res.json(result);
+    } catch (e) { next(e); }
+  });
+  app.post("/api/appraisals", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.status(201).json(await getStorage().createAppraisal({ ...req.body, companyId: user.companyId }));
+    } catch (e) { next(e); }
+  });
+  app.put("/api/appraisals/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const result = await getStorage().updateAppraisal(parseInt(req.params.id), req.body);
+      if (!result) return res.status(404).json({ message: "Not found" });
+      res.json(result);
+    } catch (e) { next(e); }
+  });
+  app.delete("/api/appraisals/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const deleted = await getStorage().deleteAppraisal(parseInt(req.params.id));
+      if (!deleted) return res.status(404).json({ message: "Not found" });
+      res.json({ success: true });
+    } catch (e) { next(e); }
+  });
+
+  app.get("/api/expense-claims", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.json(await getStorage().getAllExpenseClaims(user.role === 'superuser' ? undefined : user.companyId));
+    } catch (e) { next(e); }
+  });
+  app.get("/api/expense-claims/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const result = await getStorage().getExpenseClaim(parseInt(req.params.id));
+      if (!result) return res.status(404).json({ message: "Not found" });
+      res.json(result);
+    } catch (e) { next(e); }
+  });
+  app.post("/api/expense-claims", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.status(201).json(await getStorage().createExpenseClaim({ ...req.body, companyId: user.companyId }));
+    } catch (e) { next(e); }
+  });
+  app.put("/api/expense-claims/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const result = await getStorage().updateExpenseClaim(parseInt(req.params.id), req.body);
+      if (!result) return res.status(404).json({ message: "Not found" });
+      res.json(result);
+    } catch (e) { next(e); }
+  });
+  app.delete("/api/expense-claims/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const deleted = await getStorage().deleteExpenseClaim(parseInt(req.params.id));
+      if (!deleted) return res.status(404).json({ message: "Not found" });
+      res.json({ success: true });
+    } catch (e) { next(e); }
+  });
+
+  // ── Discuss: Channels ──────────────────────────────────────────────────────
+  app.get("/api/channels", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      const storage = getStorage() as any;
+      if (!storage.collections?.channels) return res.json([]);
+      const channels = await storage.collections.channels.find({
+        $or: [{ companyId: user.companyId }, { type: "public" }]
+      }).sort({ createdAt: 1 }).toArray();
+      res.json(channels.map((c: any) => ({ ...c, id: c.id || c._id?.toString() })));
+    } catch (e) { next(e); }
+  });
+
+  app.post("/api/channels", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      const storage = getStorage() as any;
+      if (!storage.collections?.channels) return res.status(503).json({ message: "Not available" });
+      const { name, description, type = "public" } = req.body;
+      if (!name?.trim()) return res.status(400).json({ message: "Name required" });
+      const existing = await storage.collections.channels.findOne({ name: name.trim(), companyId: user.companyId });
+      if (existing) return res.status(400).json({ message: "Channel already exists" });
+      const doc = { name: name.trim(), description: description || "", type, companyId: user.companyId, createdBy: user.id, createdByName: user.name || user.username, createdAt: new Date(), memberIds: [user.id] };
+      const result = await storage.collections.channels.insertOne(doc);
+      res.status(201).json({ ...doc, id: result.insertedId.toString() });
+    } catch (e) { next(e); }
+  });
+
+  app.delete("/api/channels/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const storage = getStorage() as any;
+      if (!storage.collections?.channels) return res.json({ success: true });
+      const { ObjectId } = require("mongodb");
+      await storage.collections.channels.deleteOne({ _id: new ObjectId(req.params.id) });
+      await storage.collections.channelMessages.deleteMany({ channelId: req.params.id });
+      res.json({ success: true });
+    } catch (e) { next(e); }
+  });
+
+  app.post("/api/channels/:id/join", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      const storage = getStorage() as any;
+      if (!storage.collections?.channels) return res.json({ success: true });
+      const { ObjectId } = require("mongodb");
+      await storage.collections.channels.updateOne(
+        { _id: new ObjectId(req.params.id) },
+        { $addToSet: { memberIds: user.id } }
+      );
+      res.json({ success: true });
+    } catch (e) { next(e); }
+  });
+
+  // ── Discuss: Messages ─────────────────────────────────────────────────────
+  app.get("/api/channels/:id/messages", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const storage = getStorage() as any;
+      if (!storage.collections?.channelMessages) return res.json([]);
+      const msgs = await storage.collections.channelMessages.find({ channelId: req.params.id }).sort({ createdAt: 1 }).limit(200).toArray();
+      res.json(msgs.map((m: any) => ({ ...m, id: m.id || m._id?.toString() })));
+    } catch (e) { next(e); }
+  });
+
+  app.post("/api/channels/:id/messages", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      const storage = getStorage() as any;
+      if (!storage.collections?.channelMessages) return res.status(503).json({ message: "Not available" });
+      const { body, type = "message" } = req.body;
+      if (!body?.trim()) return res.status(400).json({ message: "Message body required" });
+      const doc = { channelId: req.params.id, body: body.trim(), type, senderId: user.id, senderName: user.name || user.username, senderInitials: (user.name || user.username || "?").slice(0, 2).toUpperCase(), companyId: user.companyId, createdAt: new Date() };
+      const result = await storage.collections.channelMessages.insertOne(doc);
+      res.status(201).json({ ...doc, id: result.insertedId.toString() });
+    } catch (e) { next(e); }
+  });
+
+  app.delete("/api/channels/:channelId/messages/:msgId", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      const storage = getStorage() as any;
+      if (!storage.collections?.channelMessages) return res.json({ success: true });
+      const { ObjectId } = require("mongodb");
+      await storage.collections.channelMessages.deleteOne({ _id: new ObjectId(req.params.msgId), senderId: user.id });
+      res.json({ success: true });
+    } catch (e) { next(e); }
+  });
+
+  // ── Seed default channels for new company if none exist ───────────────────
+  app.post("/api/channels/seed-defaults", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      const storage = getStorage() as any;
+      if (!storage.collections?.channels) return res.json({ seeded: false });
+      const existing = await storage.collections.channels.countDocuments({ companyId: user.companyId });
+      if (existing > 0) return res.json({ seeded: false });
+      const defaults = [
+        { name: "general", description: "General announcements for all employees.", type: "public" },
+        { name: "random", description: "Non-work banter and fun stuff.", type: "public" },
+        { name: "announcements", description: "Important company announcements.", type: "public" },
+      ];
+      for (const ch of defaults) {
+        await storage.collections.channels.insertOne({ ...ch, companyId: user.companyId, createdBy: user.id, createdByName: user.name || user.username, createdAt: new Date(), memberIds: [user.id] });
+      }
+      res.json({ seeded: true });
+    } catch (e) { next(e); }
+  });
+
+  // ── Employee Self-Service: My Portal ──────────────────────────────────────
+  // Helper: find employee linked to current user (by userId field, or name match)
+  async function findMyEmployee(user: any, storage: any) {
+    const employees = await storage.getAllEmployees(user.role === 'superuser' ? undefined : user.companyId);
+    return employees.find((e: any) => e.userId === user.id || e.userId === String(user.id))
+      || employees.find((e: any) => (e.name || '').toLowerCase() === ((user.name || user.username) || '').toLowerCase())
+      || null;
+  }
+
+  // GET today's punch status for current user
+  app.get("/api/my/today-punch", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      const storage = getStorage() as any;
+      if (!storage.collections?.clockPunches) return res.json({ clockedIn: false });
+      const today = new Date().toISOString().slice(0, 10);
+      const punches = await storage.collections.clockPunches.find({ userId: user.id, date: today }).sort({ timestamp: 1 }).toArray();
+      const lastPunch = punches[punches.length - 1];
+      const clockedIn = lastPunch?.type === 'in';
+      let workSeconds = 0;
+      // Calculate total work seconds from punch pairs
+      for (let i = 0; i < punches.length - 1; i += 2) {
+        const inP = punches[i], outP = punches[i + 1];
+        if (inP?.type === 'in' && outP?.type === 'out') {
+          workSeconds += (new Date(outP.timestamp).getTime() - new Date(inP.timestamp).getTime()) / 1000;
+        }
+      }
+      if (clockedIn && lastPunch) workSeconds += (Date.now() - new Date(lastPunch.timestamp).getTime()) / 1000;
+      res.json({ clockedIn, lastPunch, punches, workSeconds: Math.floor(workSeconds), date: today });
+    } catch (e) { next(e); }
+  });
+
+  // POST clock-in
+  app.post("/api/my/clock-in", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      const storage = getStorage() as any;
+      if (!storage.collections?.clockPunches) return res.status(503).json({ message: "Not available" });
+      const today = new Date().toISOString().slice(0, 10);
+      // Prevent double clock-in
+      const lastToday = await storage.collections.clockPunches.findOne({ userId: user.id, date: today }, { sort: { timestamp: -1 } });
+      if (lastToday?.type === 'in') return res.status(400).json({ message: "Already clocked in" });
+      const { lat, lng, address } = req.body;
+      const now = new Date();
+      const punch = { userId: user.id, employeeName: user.name || user.username, companyId: user.companyId, type: 'in', timestamp: now, date: today, location: { lat, lng, address: address || '' } };
+      await storage.collections.clockPunches.insertOne(punch);
+      // Update/create attendance record
+      const employee = await findMyEmployee(user, storage);
+      if (employee) {
+        const existing = await storage.collections.attendance.findOne({ employeeId: employee.id, date: today });
+        const timeStr = now.toTimeString().slice(0, 5);
+        if (existing) { await storage.collections.attendance.updateOne({ employeeId: employee.id, date: today }, { $set: { checkIn: timeStr, status: 'present', location: { lat, lng, address } } }); }
+        else { await storage.createAttendance({ employeeId: employee.id, companyId: user.companyId, date: today, checkIn: timeStr, status: 'present', notes: address || '' } as any); }
+      }
+      res.status(201).json({ ...punch, message: `Clocked in at ${now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}` });
+    } catch (e) { next(e); }
+  });
+
+  // POST clock-out
+  app.post("/api/my/clock-out", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      const storage = getStorage() as any;
+      if (!storage.collections?.clockPunches) return res.status(503).json({ message: "Not available" });
+      const today = new Date().toISOString().slice(0, 10);
+      const lastToday = await storage.collections.clockPunches.findOne({ userId: user.id, date: today }, { sort: { timestamp: -1 } });
+      if (!lastToday || lastToday.type !== 'in') return res.status(400).json({ message: "Not clocked in" });
+      const { lat, lng, address } = req.body;
+      const now = new Date();
+      const workSeconds = Math.floor((now.getTime() - new Date(lastToday.timestamp).getTime()) / 1000);
+      const workHours = (workSeconds / 3600).toFixed(2);
+      const punch = { userId: user.id, employeeName: user.name || user.username, companyId: user.companyId, type: 'out', timestamp: now, date: today, location: { lat, lng, address: address || '' }, workHours: parseFloat(workHours) };
+      await storage.collections.clockPunches.insertOne(punch);
+      // Update attendance with checkout time + work hours
+      const employee = await findMyEmployee(user, storage);
+      if (employee) {
+        const timeStr = now.toTimeString().slice(0, 5);
+        await storage.collections.attendance.updateOne({ employeeId: employee.id, date: today }, { $set: { checkOut: timeStr, workHours } });
+      }
+      res.status(201).json({ ...punch, workHours, message: `Clocked out at ${now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}. Work hours: ${workHours}h` });
+    } catch (e) { next(e); }
+  });
+
+  // GET my attendance history
+  app.get("/api/my/attendance", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      const storage = getStorage() as any;
+      if (!storage.collections?.clockPunches) return res.json([]);
+      const { from, to } = req.query as any;
+      const query: any = { userId: user.id };
+      if (from) query.date = { $gte: from };
+      if (to) query.date = { ...(query.date || {}), $lte: to };
+      // Get daily summary grouped by date
+      const punches = await storage.collections.clockPunches.find(query).sort({ timestamp: 1 }).toArray();
+      const byDate: Record<string, any[]> = {};
+      for (const p of punches) { (byDate[p.date] = byDate[p.date] || []).push(p); }
+      const days = Object.entries(byDate).map(([date, ps]: [string, any[]]) => {
+        const inPs = ps.filter((p: any) => p.type === 'in');
+        const outPs = ps.filter((p: any) => p.type === 'out');
+        let totalWork = 0;
+        for (let i = 0; i < Math.min(inPs.length, outPs.length); i++) {
+          totalWork += (new Date(outPs[i].timestamp).getTime() - new Date(inPs[i].timestamp).getTime()) / 3600000;
+        }
+        const missedOut = inPs.length > outPs.length;
+        return { date, clockIn: inPs[0]?.timestamp, clockOut: outPs[outPs.length - 1]?.timestamp, workHours: totalWork.toFixed(2), missedOut, inLocation: inPs[0]?.location, outLocation: outPs[outPs.length - 1]?.location, punches: ps.length };
+      });
+      res.json(days.sort((a, b) => b.date.localeCompare(a.date)));
+    } catch (e) { next(e); }
+  });
+
+  // GET my leave balances + requests
+  app.get("/api/my/leaves", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      const storage = getStorage();
+      const employee = await findMyEmployee(user, storage as any);
+      const leaveTypes = await storage.getAllLeaveTypes(user.companyId);
+      const allRequests = await storage.getAllLeaveRequests(user.companyId);
+      const myRequests = allRequests.filter((r: any) => r.employeeId === employee?.id || (r.employeeName || '').toLowerCase() === ((user.name || user.username) || '').toLowerCase());
+      // Calculate used days per type
+      const usedByType: Record<string, number> = {};
+      for (const r of myRequests.filter((r: any) => r.status === 'approved')) {
+        usedByType[r.leaveTypeId || r.leaveType] = (usedByType[r.leaveTypeId || r.leaveType] || 0) + (r.totalDays || 1);
+      }
+      const balances = leaveTypes.map((t: any) => ({ ...t, used: usedByType[t.id] || 0, remaining: (t.daysAllowed || 0) - (usedByType[t.id] || 0) }));
+      res.json({ balances, requests: myRequests, employee });
+    } catch (e) { next(e); }
+  });
+
+  // POST apply for leave
+  app.post("/api/my/leaves", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      const storage = getStorage();
+      const employee = await findMyEmployee(user, storage as any);
+      if (!employee) return res.status(404).json({ message: "Employee record not found. Ask HR to link your account." });
+      const { leaveTypeId, startDate, endDate, reason, totalDays } = req.body;
+      const leaveType = await storage.getLeaveType?.(parseInt(leaveTypeId));
+      const req2 = await storage.createLeaveRequest({
+        employeeId: employee.id, employeeName: employee.name, companyId: user.companyId,
+        leaveTypeId: parseInt(leaveTypeId), leaveType: leaveType?.name || '', startDate, endDate,
+        totalDays: totalDays || 1, reason: reason || '', status: 'pending',
+      } as any);
+      res.status(201).json(req2);
+    } catch (e) { next(e); }
+  });
+
+  // GET my payslips
+  app.get("/api/my/payslips", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      const storage = getStorage();
+      const employee = await findMyEmployee(user, storage as any);
+      if (!employee) return res.json([]);
+      const all = await storage.getAllPayslips(user.companyId);
+      const mine = all.filter((p: any) => p.employeeId === employee.id);
+      res.json(mine.sort((a: any, b: any) => `${b.periodYear}-${String(b.periodMonth).padStart(2,'0')}`.localeCompare(`${a.periodYear}-${String(a.periodMonth).padStart(2,'0')}`)));
+    } catch (e) { next(e); }
+  });
+
+  // GET my profile
+  app.get("/api/my/profile", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      const storage = getStorage();
+      const employee = await findMyEmployee(user, storage as any);
+      res.json({ user: { id: user.id, name: user.name, username: user.username, email: user.email, role: user.role }, employee: employee || null });
+    } catch (e) { next(e); }
+  });
+
+  // GET my punch history for a specific date range (for calendar)
+  app.get("/api/my/punch-calendar", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      const storage = getStorage() as any;
+      if (!storage.collections?.clockPunches) return res.json([]);
+      const { month, year } = req.query as any;
+      const y = parseInt(year) || new Date().getFullYear();
+      const m = parseInt(month) || new Date().getMonth() + 1;
+      const from = `${y}-${String(m).padStart(2,'0')}-01`;
+      const to = `${y}-${String(m).padStart(2,'0')}-31`;
+      const punches = await storage.collections.clockPunches.find({ userId: user.id, date: { $gte: from, $lte: to } }).sort({ timestamp: 1 }).toArray();
+      // Group by date
+      const byDate: Record<string, any> = {};
+      for (const p of punches) {
+        if (!byDate[p.date]) byDate[p.date] = { date: p.date, ins: [], outs: [] };
+        if (p.type === 'in') byDate[p.date].ins.push(p);
+        else byDate[p.date].outs.push(p);
+      }
+      res.json(Object.values(byDate));
+    } catch (e) { next(e); }
+  });
+
+  app.get("/api/job-positions", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.json(await getStorage().getAllJobPositions(user.role === 'superuser' ? undefined : user.companyId));
+    } catch (e) { next(e); }
+  });
+  app.post("/api/job-positions", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.status(201).json(await getStorage().createJobPosition({ ...req.body, companyId: user.companyId }));
+    } catch (e) { next(e); }
+  });
+  app.put("/api/job-positions/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const result = await getStorage().updateJobPosition(parseInt(req.params.id), req.body);
+      if (!result) return res.status(404).json({ message: "Not found" });
+      res.json(result);
+    } catch (e) { next(e); }
+  });
+  app.delete("/api/job-positions/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const deleted = await getStorage().deleteJobPosition(parseInt(req.params.id));
+      if (!deleted) return res.status(404).json({ message: "Not found" });
+      res.json({ success: true });
+    } catch (e) { next(e); }
+  });
+
+  app.get("/api/job-applications", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.json(await getStorage().getAllJobApplications(user.role === 'superuser' ? undefined : user.companyId));
+    } catch (e) { next(e); }
+  });
+  app.get("/api/job-applications/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const result = await getStorage().getJobApplication(parseInt(req.params.id));
+      if (!result) return res.status(404).json({ message: "Not found" });
+      res.json(result);
+    } catch (e) { next(e); }
+  });
+  app.post("/api/job-applications", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.status(201).json(await getStorage().createJobApplication({ ...req.body, companyId: user.companyId }));
+    } catch (e) { next(e); }
+  });
+  app.put("/api/job-applications/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const result = await getStorage().updateJobApplication(parseInt(req.params.id), req.body);
+      if (!result) return res.status(404).json({ message: "Not found" });
+      res.json(result);
+    } catch (e) { next(e); }
+  });
+  app.delete("/api/job-applications/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const deleted = await getStorage().deleteJobApplication(parseInt(req.params.id));
+      if (!deleted) return res.status(404).json({ message: "Not found" });
+      res.json({ success: true });
+    } catch (e) { next(e); }
+  });
+
+  // ==================== FINANCE ====================
+  app.get("/api/accounts", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.json(await getStorage().getAllAccounts(user.role === 'superuser' ? undefined : user.companyId));
+    } catch (e) { next(e); }
+  });
+  app.post("/api/accounts", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.status(201).json(await getStorage().createAccount({ ...req.body, companyId: user.companyId }));
+    } catch (e) { next(e); }
+  });
+  app.put("/api/accounts/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const result = await getStorage().updateAccount(parseInt(req.params.id), req.body);
+      if (!result) return res.status(404).json({ message: "Not found" });
+      res.json(result);
+    } catch (e) { next(e); }
+  });
+  app.delete("/api/accounts/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const deleted = await getStorage().deleteAccount(parseInt(req.params.id));
+      if (!deleted) return res.status(404).json({ message: "Not found" });
+      res.json({ success: true });
+    } catch (e) { next(e); }
+  });
+
+  app.get("/api/journal-entries", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.json(await getStorage().getAllJournalEntries(user.role === 'superuser' ? undefined : user.companyId));
+    } catch (e) { next(e); }
+  });
+  app.get("/api/journal-entries/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const result = await getStorage().getJournalEntry(parseInt(req.params.id));
+      if (!result) return res.status(404).json({ message: "Not found" });
+      res.json(result);
+    } catch (e) { next(e); }
+  });
+  app.post("/api/journal-entries", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.status(201).json(await getStorage().createJournalEntry({ ...req.body, companyId: user.companyId }));
+    } catch (e) { next(e); }
+  });
+  app.put("/api/journal-entries/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const result = await getStorage().updateJournalEntry(parseInt(req.params.id), req.body);
+      if (!result) return res.status(404).json({ message: "Not found" });
+      res.json(result);
+    } catch (e) { next(e); }
+  });
+  app.delete("/api/journal-entries/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const deleted = await getStorage().deleteJournalEntry(parseInt(req.params.id));
+      if (!deleted) return res.status(404).json({ message: "Not found" });
+      res.json({ success: true });
+    } catch (e) { next(e); }
+  });
+  app.post("/api/journal-entries/:id/post", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const result = await getStorage().postJournalEntry(parseInt(req.params.id));
+      if (!result) return res.status(404).json({ message: "Not found" });
+      res.json(result);
+    } catch (e) { next(e); }
+  });
+  app.get("/api/finance/summary", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.json(await getStorage().getFinancialSummary(user.role === 'superuser' ? undefined : user.companyId));
+    } catch (e) { next(e); }
+  });
+
+  // ==================== HRMS ====================
+  // Generic company-scoped CRUD registrar (HRMS date fields are text, so plain schema.parse is safe)
+  const registerHrmsCrud = (
+    path: string,
+    schema: any,
+    methods: { getAll: string; create: string; update: string; del: string },
+    requireFields: string[] = []
+  ) => {
+    app.get(`/api/${path}`, async (req: any, res: any, next: any) => {
+      try {
+        if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+        const user = req.user as any;
+        const list = await (getStorage() as any)[methods.getAll](user.role === 'superuser' ? undefined : user.companyId);
+        res.json(list);
+      } catch (e) { next(e); }
+    });
+    app.post(`/api/${path}`, async (req: any, res: any, next: any) => {
+      try {
+        if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+        const user = req.user as any;
+        const payload = schema.partial().parse(req.body);
+        for (const f of requireFields) {
+          if (payload[f] === undefined || payload[f] === null || payload[f] === "") {
+            return res.status(400).json({ message: `${f} is required` });
+          }
+        }
+        const created = await (getStorage() as any)[methods.create]({ ...payload, companyId: user.companyId });
+        res.status(201).json(created);
+      } catch (e) {
+        if (e instanceof z.ZodError) return res.status(400).json({ message: "Validation error", errors: e.errors });
+        next(e);
+      }
+    });
+    app.put(`/api/${path}/:id`, async (req: any, res: any, next: any) => {
+      try {
+        if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+        const id = parseInt(req.params.id);
+        if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+        const updates = schema.partial().parse(req.body);
+        const updated = await (getStorage() as any)[methods.update](id, updates);
+        if (!updated) return res.status(404).json({ message: "Not found" });
+        res.json(updated);
+      } catch (e) {
+        if (e instanceof z.ZodError) return res.status(400).json({ message: "Validation error", errors: e.errors });
+        next(e);
+      }
+    });
+    app.delete(`/api/${path}/:id`, async (req: any, res: any, next: any) => {
+      try {
+        if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+        const id = parseInt(req.params.id);
+        if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+        const deleted = await (getStorage() as any)[methods.del](id);
+        if (!deleted) return res.status(404).json({ message: "Not found" });
+        res.json({ success: true });
+      } catch (e) { next(e); }
+    });
+  };
+
+  registerHrmsCrud("departments", insertDepartmentSchema, { getAll: "getAllDepartments", create: "createDepartment", update: "updateDepartment", del: "deleteDepartment" }, ["name"]);
+  registerHrmsCrud("designations", insertDesignationSchema, { getAll: "getAllDesignations", create: "createDesignation", update: "updateDesignation", del: "deleteDesignation" }, ["title"]);
+  registerHrmsCrud("employees", insertEmployeeSchema, { getAll: "getAllEmployees", create: "createEmployee", update: "updateEmployee", del: "deleteEmployee" }, ["employeeCode", "firstName"]);
+  registerHrmsCrud("attendance", insertAttendanceSchema, { getAll: "getAllAttendance", create: "createAttendance", update: "updateAttendance", del: "deleteAttendance" }, ["employeeId", "date"]);
+  registerHrmsCrud("leave-types", insertLeaveTypeSchema, { getAll: "getAllLeaveTypes", create: "createLeaveType", update: "updateLeaveType", del: "deleteLeaveType" }, ["name"]);
+  registerHrmsCrud("leave-requests", insertLeaveRequestSchema, { getAll: "getAllLeaveRequests", create: "createLeaveRequest", update: "updateLeaveRequest", del: "deleteLeaveRequest" }, ["employeeId", "leaveTypeId", "fromDate", "toDate"]);
+  registerHrmsCrud("payslips", insertPayslipSchema, { getAll: "getAllPayslips", create: "createPayslip", update: "updatePayslip", del: "deletePayslip" }, ["employeeId", "periodMonth", "periodYear"]);
+
+  // Employee by id
+  app.get("/api/employees/:id", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      const emp = await getStorage().getEmployee(id);
+      if (!emp) return res.status(404).json({ message: "Employee not found" });
+      res.json(emp);
+    } catch (e) { next(e); }
+  });
+
+  // Attendance for a specific employee
+  app.get("/api/employees/:id/attendance", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      res.json(await getStorage().getAttendanceByEmployee(id));
+    } catch (e) { next(e); }
+  });
+
+  // Approve / reject a leave request
+  app.post("/api/leave-requests/:id/decision", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      const { decision, comment } = req.body || {};
+      if (!["approved", "rejected", "cancelled"].includes(decision)) {
+        return res.status(400).json({ message: "decision must be approved, rejected or cancelled" });
+      }
+      const updated = await getStorage().updateLeaveRequest(id, {
+        status: decision,
+        approvedBy: user.username ?? String(user.id),
+        approverComment: comment ?? null,
+      } as any);
+      if (!updated) return res.status(404).json({ message: "Leave request not found" });
+      res.json(updated);
+    } catch (e) { next(e); }
+  });
+
+  // Generate a payslip for an employee from their salary structure
+  app.post("/api/payroll/generate", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      const { employeeId, periodMonth, periodYear, lopDays } = req.body || {};
+      if (!employeeId || !periodMonth || !periodYear) {
+        return res.status(400).json({ message: "employeeId, periodMonth and periodYear are required" });
+      }
+      const emp = await getStorage().getEmployee(Number(employeeId));
+      if (!emp) return res.status(404).json({ message: "Employee not found" });
+
+      const ctc = Number((emp as any).ctc) || 0;
+      const monthlyGross = ctc > 0 ? ctc / 12 : 0;
+      const basicRaw = Number((emp as any).basicSalary) || monthlyGross * 0.5;
+      const basic = +basicRaw.toFixed(2);
+      const hra = +(basic * 0.4).toFixed(2);
+      const allowances = +Math.max(0, monthlyGross - basic - hra).toFixed(2);
+      const grossBeforeLop = basic + hra + allowances;
+
+      // Loss-of-pay proration (assume 30-day month)
+      const lop = Number(lopDays) || 0;
+      const perDay = grossBeforeLop / 30;
+      const lopAmount = +(perDay * lop).toFixed(2);
+      const grossPay = +Math.max(0, grossBeforeLop - lopAmount).toFixed(2);
+
+      // Statutory deductions (simplified): PF 12% of basic (capped), professional tax 200
+      const pf = +Math.min(basic * 0.12, 1800).toFixed(2);
+      const tax = 200;
+      const otherDeductions = 0;
+      const netPay = +(grossPay - pf - tax - otherDeductions).toFixed(2);
+
+      const created = await getStorage().createPayslip({
+        companyId: emp.companyId,
+        employeeId: Number(employeeId),
+        periodMonth: Number(periodMonth),
+        periodYear: Number(periodYear),
+        basic: String(basic),
+        hra: String(hra),
+        allowances: String(allowances),
+        otherEarnings: "0",
+        pf: String(pf),
+        tax: String(tax),
+        otherDeductions: String(otherDeductions),
+        grossPay: String(grossPay),
+        netPay: String(netPay),
+        lopDays: String(lop),
+        status: "draft",
+      } as any);
+      res.status(201).json(created);
+    } catch (e) { next(e); }
+  });
+
+  // ==================== Inventory / Warehouse ====================
+  // Reuse the generic company-scoped CRUD registrar for simple entities
+  registerHrmsCrud("warehouses", insertWarehouseSchema, { getAll: "getAllWarehouses", create: "createWarehouse", update: "updateWarehouse", del: "deleteWarehouse" }, ["name"]);
+  registerHrmsCrud("stock-locations", insertStockLocationSchema, { getAll: "getAllStockLocations", create: "createStockLocation", update: "updateStockLocation", del: "deleteStockLocation" }, ["name"]);
+  registerHrmsCrud("reorder-rules", insertReorderRuleSchema, { getAll: "getAllReorderRules", create: "createReorderRule", update: "updateReorderRule", del: "deleteReorderRule" }, ["itemId"]);
+  registerHrmsCrud("stock-transfers", insertStockTransferSchema, { getAll: "getAllStockTransfers", create: "createStockTransfer", update: "updateStockTransfer", del: "deleteStockTransfer" }, ["reference"]);
+
+  // Stock quants (read-only on-hand by location)
+  app.get("/api/stock-quants", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.json(await getStorage().getAllStockQuants(user.role === 'superuser' ? undefined : user.companyId));
+    } catch (e) { next(e); }
+  });
+
+  // Stock moves (GET / POST / DELETE — a posted 'done' move updates quants + global qty)
+  app.get("/api/stock-moves", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.json(await getStorage().getAllStockMoves(user.role === 'superuser' ? undefined : user.companyId));
+    } catch (e) { next(e); }
+  });
+  app.post("/api/stock-moves", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      const payload = insertStockMoveSchema.partial().parse(req.body);
+      if (payload.itemId === undefined || payload.itemId === null) return res.status(400).json({ message: "itemId is required" });
+      if (payload.quantity === undefined || payload.quantity === null) return res.status(400).json({ message: "quantity is required" });
+      const created = await getStorage().createStockMove({
+        ...payload,
+        companyId: user.companyId,
+        date: (payload.date as any) || new Date().toISOString().slice(0, 10),
+        status: payload.status ?? "done",
+      } as any);
+      res.status(201).json(created);
+    } catch (e) {
+      if (e instanceof z.ZodError) return res.status(400).json({ message: "Validation error", errors: e.errors });
+      next(e);
+    }
+  });
+  app.delete("/api/stock-moves/:id", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      const deleted = await getStorage().deleteStockMove(id);
+      if (!deleted) return res.status(404).json({ message: "Move not found" });
+      res.json({ success: true });
+    } catch (e) { next(e); }
+  });
+
+  // Validate a transfer -> generates done moves and updates stock
+  app.post("/api/stock-transfers/:id/validate", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      const validated = await getStorage().validateStockTransfer(id);
+      if (!validated) return res.status(404).json({ message: "Transfer not found" });
+      res.json(validated);
+    } catch (e) { next(e); }
+  });
+
   app.post("/api/leads/:leadId/discussions", async (req, res, next) => {
     try {
       if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
@@ -985,6 +2464,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       next(error);
     }
+  });
+
+  // ==================== SUPPORT TICKETS ====================
+  app.get("/api/support-tickets", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      const tickets = await getStorage().getAllSupportTickets();
+      res.json(user.role === 'superuser' ? tickets : tickets.filter((t: any) => t.companyId === user.companyId));
+    } catch (e) { next(e); }
+  });
+  app.get("/api/support-tickets/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const ticket = await getStorage().getSupportTicket(parseInt(req.params.id));
+      if (!ticket) return res.status(404).json({ message: "Not found" });
+      res.json(ticket);
+    } catch (e) { next(e); }
+  });
+  app.post("/api/support-tickets", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const user = req.user as any;
+      res.status(201).json(await getStorage().createSupportTicket({ ...req.body, companyId: user.companyId }));
+    } catch (e) { next(e); }
+  });
+  app.put("/api/support-tickets/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const result = await getStorage().updateSupportTicket(parseInt(req.params.id), req.body);
+      if (!result) return res.status(404).json({ message: "Not found" });
+      res.json(result);
+    } catch (e) { next(e); }
+  });
+  app.delete("/api/support-tickets/:id", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const deleted = await getStorage().deleteSupportTicket(parseInt(req.params.id));
+      if (!deleted) return res.status(404).json({ message: "Not found" });
+      res.json({ success: true });
+    } catch (e) { next(e); }
   });
 
   // Quotation Management Routes
@@ -1156,6 +2676,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Quotation PDF generation failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       res.status(500).json({ message: `Quotation PDF generation failed: ${errorMessage}` });
+    }
+  });
+
+  // Debug route: return generated HTML for a quotation (no PDF conversion)
+  app.get("/api/quotations/:id/preview-html", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const storage = getStorage();
+      const resolvedId = await resolveQuotationIdParam(req.params.id);
+      let quotation;
+      if (resolvedId) {
+        quotation = await storage.getQuotation(resolvedId);
+      } else {
+        quotation = await findQuotationObjectByParam(req.params.id);
+      }
+
+      if (!quotation) return res.status(404).json({ message: "Quotation not found" });
+
+      // Use pdfGenerator to build HTML
+      const html = await pdfGenerator.generateQuotationHTML(quotation as any);
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.send(html);
+    } catch (error) {
+      console.error('Quotation HTML preview failed:', error);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      res.status(500).json({ message: `Quotation HTML preview failed: ${message}` });
+    }
+  });
+
+  // Debug helper: open preview HTML in default browser (development only)
+  app.get("/api/quotations/:id/preview-open", async (req, res, next) => {
+    try {
+      if (app.get('env') !== 'development') return res.status(403).json({ message: 'Not allowed in production' });
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+      const port = Number(process.env.PORT || (app.get('env') === 'development' ? 3001 : 10000));
+      const host = process.env.HOST || '127.0.0.1';
+      const url = `http://${host}:${port}/api/quotations/${encodeURIComponent(req.params.id)}/preview-html`;
+
+      // Launch default browser (Windows-friendly command)
+      const { exec } = require('child_process');
+      let cmd: string;
+      if (process.platform === 'win32') {
+        cmd = `start "" "${url}"`;
+      } else if (process.platform === 'darwin') {
+        cmd = `open "${url}"`;
+      } else {
+        cmd = `xdg-open "${url}"`;
+      }
+
+      exec(cmd, (err: any) => {
+        if (err) console.warn('Failed to open browser:', err);
+      });
+
+      res.json({ message: 'Opening preview in default browser', url });
+    } catch (error) {
+      console.error('Preview open failed:', error);
+      res.status(500).json({ message: 'Preview open failed' });
     }
   });
 
@@ -1475,15 +3053,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
       if (!hasPermission(req, 'orders:update', 'orders')) return res.status(403).json({ message: 'Forbidden' });
-      
+
       const id = parseInt(req.params.id);
       if (isNaN(id)) return res.status(400).json({ message: "Invalid order ID" });
-      
+
       // Validate update data (partial schema)
       const orderData = insertOrderSchema.partial().parse(req.body);
       const storage = getStorage();
+
+      // Fetch the existing order to detect status transition
+      const existingOrder = await storage.getOrder(id);
       const updated = await storage.updateOrder(id, orderData);
       if (!updated) return res.status(404).json({ message: "Order not found" });
+
+      // Cross-module link: when order is confirmed, auto-create a Delivery Order
+      if (
+        orderData.status === 'confirmed' &&
+        existingOrder &&
+        existingOrder.status !== 'confirmed'
+      ) {
+        try {
+          const user = req.user as any;
+          const items = Array.isArray((updated as any).items)
+            ? (updated as any).items.map((it: any) => ({
+                itemName: it.name || it.sku || 'Item',
+                quantity: Number(it.quantity || 1),
+                unitPrice: Number(it.price || 0),
+              }))
+            : [];
+          await storage.createDeliveryOrder({
+            name: `DO-${(updated as any).orderNumber || id}`,
+            orderId: id,
+            customerName: (updated as any).customerName || '',
+            customerCompany: (updated as any).customerCompany || '',
+            status: 'draft',
+            items,
+            companyId: user.companyId,
+          } as any);
+        } catch (doErr) {
+          // Log but do not fail the order update
+          console.error('[auto delivery order] failed to create delivery order:', doErr);
+        }
+      }
+
       res.json(updated);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1613,6 +3225,572 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       next(error);
     }
+  });
+
+  // ── Reports API (with full filter support) ───────────────────────────────
+  const reportDateFilter = (dateStr: any, from?: string, to?: string, period?: string) => {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return false;
+    if (from && d < new Date(from)) return false;
+    if (to && d > new Date(to + "T23:59:59")) return false;
+    if (!from && !to && period) {
+      const now = new Date();
+      const days = (now.getTime() - d.getTime()) / 86400000;
+      if (period === "today") return days < 1;
+      if (period === "last7days") return days <= 7;
+      if (period === "last30days") return days <= 30;
+      if (period === "lastQuarter") return days <= 90;
+      if (period === "lastYear") return days <= 365;
+      if (period === "thisMonth") return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      if (period === "lastMonth") { const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1); const lme = new Date(now.getFullYear(), now.getMonth(), 0); return d >= lm && d <= lme; }
+    }
+    return true;
+  };
+
+  // SALES report
+  app.get("/api/reports/sales", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const storage = getStorage();
+      const user = req.user as any;
+      const { period = "last30days", dateFrom, dateTo, customerId, status, groupBy = "day" } = req.query as any;
+
+      const allOrders = await storage.getAllOrders();
+      let orders = (user.role === "superuser" ? allOrders : allOrders.filter((o: any) => o.companyId === user.companyId)) as any[];
+      orders = orders.filter(o => reportDateFilter(o.createdAt, dateFrom, dateTo, period));
+      if (customerId) orders = orders.filter(o => String(o.customerId) === customerId);
+      if (status && status !== "all") orders = orders.filter(o => o.status === status);
+
+      const allInvoices = await (storage as any).getAllInvoices?.() || [];
+      let invoices = (user.role === "superuser" ? allInvoices : (allInvoices as any[]).filter((i: any) => i.companyId === user.companyId)) as any[];
+      invoices = invoices.filter(i => reportDateFilter(i.createdAt, dateFrom, dateTo, period));
+      if (customerId) invoices = invoices.filter(i => String(i.customerId) === customerId);
+
+      const getKey = (d: Date) => {
+        if (groupBy === "month" || period === "lastYear") return d.toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
+        if (groupBy === "week") { const wk = Math.ceil(d.getDate() / 7); return `W${wk} ${d.toLocaleDateString("en-IN", { month: "short" })}`; }
+        return d.toLocaleDateString("en-IN", { month: "short", day: "numeric" });
+      };
+
+      const buckets: Record<string, { date: string; revenue: number; orders: number; invoiced: number; cancelled: number }> = {};
+      for (const o of orders) {
+        const k = getKey(new Date(o.createdAt));
+        if (!buckets[k]) buckets[k] = { date: k, revenue: 0, orders: 0, invoiced: 0, cancelled: 0 };
+        if (o.status !== "cancelled") buckets[k].revenue += parseFloat(o.totalAmount || "0");
+        if (o.status === "cancelled") buckets[k].cancelled += 1;
+        buckets[k].orders += 1;
+      }
+      for (const inv of invoices) {
+        const k = getKey(new Date(inv.createdAt));
+        if (!buckets[k]) buckets[k] = { date: k, revenue: 0, orders: 0, invoiced: 0, cancelled: 0 };
+        buckets[k].invoiced += parseFloat(inv.totalAmount || "0");
+      }
+
+      // Top customers
+      const custMap: Record<string, { name: string; revenue: number; orders: number }> = {};
+      for (const o of orders.filter(o => o.status !== "cancelled")) {
+        const k = String(o.customerId || o.customerName || "Unknown");
+        if (!custMap[k]) custMap[k] = { name: o.customerName || k, revenue: 0, orders: 0 };
+        custMap[k].revenue += parseFloat(o.totalAmount || "0");
+        custMap[k].orders += 1;
+      }
+      const topCustomers = Object.values(custMap).sort((a, b) => b.revenue - a.revenue).slice(0, 10);
+
+      // Status breakdown
+      const byStatus: Record<string, number> = {};
+      for (const o of orders) byStatus[o.status || "draft"] = (byStatus[o.status || "draft"] || 0) + 1;
+
+      const totalRevenue = orders.filter(o => o.status !== "cancelled").reduce((s, o) => s + parseFloat(o.totalAmount || "0"), 0);
+      const totalOrders = orders.length;
+      const cancelled = orders.filter(o => o.status === "cancelled").length;
+      const avgOrderValue = totalOrders > 0 ? totalRevenue / Math.max(1, totalOrders - cancelled) : 0;
+
+      res.json({
+        trend: Object.values(buckets).sort((a, b) => a.date.localeCompare(b.date)),
+        summary: { totalRevenue, totalOrders, cancelled, avgOrderValue, totalInvoiced: invoices.reduce((s, i) => s + parseFloat(i.totalAmount || "0"), 0) },
+        topCustomers,
+        byStatus: Object.entries(byStatus).map(([name, value]) => ({ name, value })),
+        rows: orders.slice(0, 100).map(o => ({ id: o.id, orderNumber: o.orderNumber, customerName: o.customerName, date: o.createdAt, status: o.status, amount: parseFloat(o.totalAmount || "0") })),
+      });
+    } catch (e) { next(e); }
+  });
+
+  // CRM / LEADS report
+  app.get("/api/reports/leads", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const storage = getStorage();
+      const user = req.user as any;
+      const { period = "lastYear", dateFrom, dateTo, status, source, assignedTo } = req.query as any;
+
+      const allLeads = await storage.getAllLeads();
+      let leads = (user.role === "superuser" ? allLeads : allLeads.filter((l: any) => l.companyId === user.companyId)) as any[];
+      leads = leads.filter(l => reportDateFilter(l.createdAt, dateFrom, dateTo, period));
+      if (status && status !== "all") leads = leads.filter(l => l.status === status);
+      if (source && source !== "all") leads = leads.filter(l => l.source === source);
+      if (assignedTo && assignedTo !== "all") leads = leads.filter(l => l.assignedTo === assignedTo);
+
+      const byStatus: Record<string, number> = {};
+      const bySource: Record<string, number> = {};
+      const byCategory: Record<string, number> = {};
+      const byAssigned: Record<string, number> = {};
+      const monthly: Record<string, { month: string; total: number; won: number; lost: number }> = {};
+
+      for (const l of leads) {
+        byStatus[l.status || "new"] = (byStatus[l.status || "new"] || 0) + 1;
+        bySource[l.source || "other"] = (bySource[l.source || "other"] || 0) + 1;
+        byCategory[l.category || "general"] = (byCategory[l.category || "general"] || 0) + 1;
+        byAssigned[l.assignedTo || "Unassigned"] = (byAssigned[l.assignedTo || "Unassigned"] || 0) + 1;
+        const mk = new Date(l.createdAt).toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
+        if (!monthly[mk]) monthly[mk] = { month: mk, total: 0, won: 0, lost: 0 };
+        monthly[mk].total += 1;
+        if (l.status === "won") monthly[mk].won += 1;
+        if (l.status === "lost") monthly[mk].lost += 1;
+      }
+
+      const total = leads.length;
+      const won = leads.filter(l => l.status === "won").length;
+      const lost = leads.filter(l => l.status === "lost").length;
+      const pipeline = leads.filter(l => l.status !== "won" && l.status !== "lost").length;
+      const totalValue = leads.reduce((s, l) => s + parseFloat(l.expectedValue || l.value || "0"), 0);
+      const wonValue = leads.filter(l => l.status === "won").reduce((s, l) => s + parseFloat(l.expectedValue || l.value || "0"), 0);
+
+      // Conversion funnel
+      const statuses = ["new", "contacted", "qualified", "proposal", "negotiation", "won"];
+      const funnel = statuses.map(s => ({ stage: s, count: leads.filter(l => l.status === s).length }));
+
+      res.json({
+        summary: { total, won, lost, pipeline, conversionRate: total > 0 ? Math.round((won / total) * 100) : 0, totalValue, wonValue },
+        byStatus: Object.entries(byStatus).map(([name, value]) => ({ name, value })),
+        bySource: Object.entries(bySource).map(([name, value]) => ({ name, value })),
+        byCategory: Object.entries(byCategory).map(([name, value]) => ({ name, value })),
+        byAssigned: Object.entries(byAssigned).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 10),
+        monthly: Object.values(monthly),
+        funnel,
+        rows: leads.slice(0, 100).map(l => ({ id: l.id, name: l.name, company: l.company, status: l.status, source: l.source, assignedTo: l.assignedTo, value: parseFloat(l.expectedValue || l.value || "0"), date: l.createdAt })),
+      });
+    } catch (e) { next(e); }
+  });
+
+  // FINANCE / INVOICE report
+  app.get("/api/reports/finance", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const storage = getStorage();
+      const user = req.user as any;
+      const { period = "lastYear", dateFrom, dateTo, status, customerId } = req.query as any;
+
+      const allInvoices = await (storage as any).getAllInvoices?.() || [];
+      let invoices = (user.role === "superuser" ? allInvoices : allInvoices.filter((i: any) => i.companyId === user.companyId)) as any[];
+      invoices = invoices.filter(i => reportDateFilter(i.createdAt, dateFrom, dateTo, period));
+      if (status && status !== "all") invoices = invoices.filter(i => i.status === status);
+      if (customerId) invoices = invoices.filter(i => String(i.customerId) === customerId);
+
+      const allPayments = await (storage as any).getAllPayments?.() || [];
+      let payments = (user.role === "superuser" ? allPayments : (allPayments as any[]).filter((p: any) => p.companyId === user.companyId)) as any[];
+      payments = payments.filter(p => reportDateFilter(p.createdAt || p.paymentDate, dateFrom, dateTo, period));
+
+      // Monthly collections trend
+      const monthly: Record<string, { month: string; invoiced: number; collected: number }> = {};
+      for (const inv of invoices) {
+        const mk = new Date(inv.createdAt).toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
+        if (!monthly[mk]) monthly[mk] = { month: mk, invoiced: 0, collected: 0 };
+        monthly[mk].invoiced += parseFloat(inv.totalAmount || "0");
+        if (inv.status === "paid") monthly[mk].collected += parseFloat(inv.totalAmount || "0");
+      }
+
+      // AR Aging
+      const now = new Date();
+      const aging = { current: 0, d30: 0, d60: 0, d90plus: 0 };
+      for (const inv of invoices) {
+        if (inv.status === "paid") continue;
+        const due = new Date(inv.dueDate || inv.createdAt);
+        const days = Math.floor((now.getTime() - due.getTime()) / 86400000);
+        const amt = parseFloat(inv.totalAmount || "0") - parseFloat(inv.paidAmount || "0");
+        if (days <= 0) aging.current += amt;
+        else if (days <= 30) aging.d30 += amt;
+        else if (days <= 60) aging.d60 += amt;
+        else aging.d90plus += amt;
+      }
+
+      // Top debtors (outstanding)
+      const debtorMap: Record<string, { name: string; outstanding: number; invoices: number }> = {};
+      for (const inv of invoices.filter(i => i.status !== "paid")) {
+        const k = String(inv.customerId || inv.customerName || "Unknown");
+        if (!debtorMap[k]) debtorMap[k] = { name: inv.customerName || k, outstanding: 0, invoices: 0 };
+        debtorMap[k].outstanding += parseFloat(inv.totalAmount || "0") - parseFloat(inv.paidAmount || "0");
+        debtorMap[k].invoices += 1;
+      }
+
+      const byStatus: Record<string, number> = {};
+      for (const inv of invoices) byStatus[inv.status || "draft"] = (byStatus[inv.status || "draft"] || 0) + parseFloat(inv.totalAmount || "0");
+
+      const totalInvoiced = invoices.reduce((s, i) => s + parseFloat(i.totalAmount || "0"), 0);
+      const totalPaid = payments.reduce((s, p) => s + parseFloat(p.amount || "0"), 0);
+      const outstanding = invoices.filter(i => i.status !== "paid").reduce((s, i) => s + parseFloat(i.totalAmount || "0") - parseFloat(i.paidAmount || "0"), 0);
+
+      res.json({
+        summary: { totalInvoiced, totalPaid, outstanding, invoiceCount: invoices.length, overdueCount: invoices.filter(i => i.status === "overdue").length },
+        aging: [
+          { label: "Current", amount: aging.current },
+          { label: "1–30 days", amount: aging.d30 },
+          { label: "31–60 days", amount: aging.d60 },
+          { label: "90+ days", amount: aging.d90plus },
+        ],
+        monthly: Object.values(monthly),
+        byStatus: Object.entries(byStatus).map(([name, value]) => ({ name, value })),
+        topDebtors: Object.values(debtorMap).sort((a, b) => b.outstanding - a.outstanding).slice(0, 10),
+        rows: invoices.slice(0, 100).map(i => ({ id: i.id, invoiceNumber: i.invoiceNumber, customerName: i.customerName, date: i.createdAt, dueDate: i.dueDate, status: i.status, amount: parseFloat(i.totalAmount || "0"), paid: parseFloat(i.paidAmount || "0") })),
+      });
+    } catch (e) { next(e); }
+  });
+
+  // INVENTORY report
+  app.get("/api/reports/inventory", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const storage = getStorage();
+      const user = req.user as any;
+      const { category, stockLevel } = req.query as any;
+
+      const allItems = await (storage as any).getAllInventory?.() || await (storage as any).getInventoryItems?.() || [];
+      let items = (user.role === "superuser" ? allItems : (allItems as any[]).filter((i: any) => i.companyId === user.companyId)) as any[];
+      if (category && category !== "all") items = items.filter(i => i.category === category);
+      if (stockLevel === "low") items = items.filter(i => (i.quantity || 0) > 0 && (i.quantity || 0) < (i.threshold || 10));
+      if (stockLevel === "out") items = items.filter(i => (i.quantity || 0) === 0);
+      if (stockLevel === "ok") items = items.filter(i => (i.quantity || 0) >= (i.threshold || 10));
+
+      const allItemsForStats = (user.role === "superuser" ? allItems : (allItems as any[]).filter((i: any) => i.companyId === user.companyId)) as any[];
+      const lowStock = allItemsForStats.filter(i => (i.quantity || 0) > 0 && (i.quantity || 0) < (i.threshold || 10));
+      const outOfStock = allItemsForStats.filter(i => (i.quantity || 0) === 0);
+
+      const byCat: Record<string, { name: string; count: number; value: number }> = {};
+      let totalValue = 0;
+      for (const item of items) {
+        const cat = item.category || "Uncategorized";
+        if (!byCat[cat]) byCat[cat] = { name: cat, count: 0, value: 0 };
+        byCat[cat].count += 1;
+        const val = parseFloat(item.costPrice || item.unitPrice || "0") * (item.quantity || 0);
+        byCat[cat].value += val;
+        totalValue += val;
+      }
+
+      // Top items by value
+      const topByValue = [...items].sort((a, b) => {
+        const av = parseFloat(a.costPrice || a.unitPrice || "0") * (a.quantity || 0);
+        const bv = parseFloat(b.costPrice || b.unitPrice || "0") * (b.quantity || 0);
+        return bv - av;
+      }).slice(0, 10).map(i => ({ name: i.name, sku: i.sku, quantity: i.quantity, category: i.category, value: parseFloat(i.costPrice || i.unitPrice || "0") * (i.quantity || 0) }));
+
+      res.json({
+        summary: { total: allItemsForStats.length, filtered: items.length, lowStock: lowStock.length, outOfStock: outOfStock.length, totalValue },
+        byCategory: Object.values(byCat).sort((a, b) => b.value - a.value),
+        lowStockItems: lowStock.slice(0, 20).map((i: any) => ({ name: i.name, sku: i.sku, quantity: i.quantity, threshold: i.threshold || 10, category: i.category })),
+        topByValue,
+        rows: items.map(i => ({ id: i.id, name: i.name, sku: i.sku, category: i.category, quantity: i.quantity, threshold: i.threshold || 10, unitPrice: parseFloat(i.costPrice || i.unitPrice || "0"), value: parseFloat(i.costPrice || i.unitPrice || "0") * (i.quantity || 0) })),
+      });
+    } catch (e) { next(e); }
+  });
+
+  // HR report
+  app.get("/api/reports/hr", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const storage = getStorage();
+      const user = req.user as any;
+      const { departmentId, empStatus, month, year } = req.query as any;
+
+      const allEmps = await (storage as any).getAllEmployees?.() || [];
+      let emps = (user.role === "superuser" ? allEmps : (allEmps as any[]).filter((e: any) => e.companyId === user.companyId)) as any[];
+      if (departmentId && departmentId !== "all") emps = emps.filter(e => String(e.departmentId) === departmentId);
+      if (empStatus && empStatus !== "all") emps = emps.filter(e => e.status === empStatus);
+
+      const allDepts = await (storage as any).getAllDepartments?.() || [];
+      const deptName = (id: any) => (allDepts as any[]).find(d => d.id === id)?.name || "General";
+
+      const byDept: Record<string, number> = {};
+      const byStatus: Record<string, number> = {};
+      const byType: Record<string, number> = {};
+      for (const e of emps) {
+        const dn = deptName(e.departmentId);
+        byDept[dn] = (byDept[dn] || 0) + 1;
+        byStatus[e.status || "active"] = (byStatus[e.status || "active"] || 0) + 1;
+        byType[e.employmentType || "full_time"] = (byType[e.employmentType || "full_time"] || 0) + 1;
+      }
+
+      const allPayslips = await (storage as any).getAllPayslips?.() || [];
+      let payslips = (user.role === "superuser" ? allPayslips : (allPayslips as any[]).filter((p: any) => p.companyId === user.companyId)) as any[];
+      if (month) payslips = payslips.filter(p => String(p.periodMonth) === month);
+      if (year) payslips = payslips.filter(p => String(p.periodYear) === year);
+      const paidSlips = payslips.filter(p => p.status === "paid");
+      const totalPayroll = paidSlips.reduce((s, p) => s + parseFloat(p.netPay || "0"), 0);
+      const totalGross = paidSlips.reduce((s, p) => s + parseFloat(p.grossPay || "0"), 0);
+
+      // Monthly payroll trend
+      const payrollMonthly: Record<string, { month: string; total: number; count: number }> = {};
+      for (const p of allPayslips.filter((p: any) => p.status === "paid")) {
+        const mk = `${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][(p.periodMonth || 1) - 1]} ${String(p.periodYear).slice(-2)}`;
+        if (!payrollMonthly[mk]) payrollMonthly[mk] = { month: mk, total: 0, count: 0 };
+        payrollMonthly[mk].total += parseFloat(p.netPay || "0");
+        payrollMonthly[mk].count += 1;
+      }
+
+      // Leave summary
+      const allLeaves = await (storage as any).getAllLeaveRequests?.() || [];
+      const pending = (allLeaves as any[]).filter(l => l.status === "pending").length;
+      const approved = (allLeaves as any[]).filter(l => l.status === "approved").length;
+
+      res.json({
+        summary: { total: emps.length, active: byStatus["active"] || 0, onLeave: byStatus["on_leave"] || 0, totalPayroll, totalGross, pendingLeaves: pending, approvedLeaves: approved },
+        byDepartment: Object.entries(byDept).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value),
+        byStatus: Object.entries(byStatus).map(([name, value]) => ({ name, value })),
+        byType: Object.entries(byType).map(([name, value]) => ({ name, value })),
+        payrollMonthly: Object.values(payrollMonthly),
+        rows: emps.map(e => ({ id: e.id, name: `${e.firstName} ${e.lastName || ""}`.trim(), code: e.employeeCode, department: deptName(e.departmentId), status: e.status, type: e.employmentType, salary: parseFloat(e.basicSalary || "0") })),
+      });
+    } catch (e) { next(e); }
+  });
+
+  // SUPPORT TICKETS report
+  app.get("/api/reports/support", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const storage = getStorage();
+      const user = req.user as any;
+      const { period = "last30days", dateFrom, dateTo, status, priority, assignedTo } = req.query as any;
+
+      const allTickets = await (storage as any).getAllSupportTickets?.() || [];
+      let tickets = (user.role === "superuser" ? allTickets : (allTickets as any[]).filter((t: any) => t.companyId === user.companyId)) as any[];
+      tickets = tickets.filter(t => reportDateFilter(t.createdAt, dateFrom, dateTo, period));
+      if (status && status !== "all") tickets = tickets.filter(t => t.status === status);
+      if (priority && priority !== "all") tickets = tickets.filter(t => t.priority === priority);
+      if (assignedTo && assignedTo !== "all") tickets = tickets.filter(t => t.assignedTo === assignedTo);
+
+      const byStatus: Record<string, number> = {};
+      const byPriority: Record<string, number> = {};
+      const byCategory: Record<string, number> = {};
+      const monthly: Record<string, { month: string; total: number; resolved: number }> = {};
+      const SLA_H: Record<string, number> = { urgent: 4, high: 8, medium: 24, low: 72 };
+      let breached = 0, resolved = 0, totalResolutionH = 0, resolvedCount = 0;
+
+      for (const t of tickets) {
+        byStatus[t.status || "open"] = (byStatus[t.status || "open"] || 0) + 1;
+        byPriority[t.priority || "medium"] = (byPriority[t.priority || "medium"] || 0) + 1;
+        byCategory[t.category || "General"] = (byCategory[t.category || "General"] || 0) + 1;
+        const mk = new Date(t.createdAt).toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
+        if (!monthly[mk]) monthly[mk] = { month: mk, total: 0, resolved: 0 };
+        monthly[mk].total += 1;
+        if (t.status === "resolved" || t.status === "closed") { monthly[mk].resolved += 1; resolved += 1; }
+        // SLA breach check
+        if (t.status !== "resolved" && t.status !== "closed") {
+          const elapsed = (Date.now() - new Date(t.createdAt).getTime()) / 3600000;
+          if (elapsed > (SLA_H[t.priority] || 24)) breached += 1;
+        }
+        // Avg resolution time
+        if ((t.status === "resolved" || t.status === "closed") && t.resolvedAt) {
+          const h = (new Date(t.resolvedAt).getTime() - new Date(t.createdAt).getTime()) / 3600000;
+          totalResolutionH += h; resolvedCount += 1;
+        }
+      }
+
+      res.json({
+        summary: { total: tickets.length, open: byStatus["open"] || 0, resolved, breached, avgResolutionH: resolvedCount > 0 ? Math.round(totalResolutionH / resolvedCount) : null },
+        byStatus: Object.entries(byStatus).map(([name, value]) => ({ name, value })),
+        byPriority: Object.entries(byPriority).map(([name, value]) => ({ name, value })),
+        byCategory: Object.entries(byCategory).map(([name, value]) => ({ name, value })),
+        monthly: Object.values(monthly),
+        rows: tickets.slice(0, 100).map(t => ({ id: t.id, ticketNumber: t.ticketNumber, subject: t.subject, status: t.status, priority: t.priority, assignedTo: t.assignedTo, category: t.category, date: t.createdAt })),
+      });
+    } catch (e) { next(e); }
+  });
+
+  // PURCHASES report
+  app.get("/api/reports/purchases", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const storage = getStorage();
+      const user = req.user as any;
+      const { period = "lastYear", dateFrom, dateTo, status, supplierId } = req.query as any;
+
+      const allPOs = await (storage as any).getAllPurchaseOrders?.() || [];
+      let pos = (user.role === "superuser" ? allPOs : (allPOs as any[]).filter((p: any) => p.companyId === user.companyId)) as any[];
+      pos = pos.filter(p => reportDateFilter(p.createdAt, dateFrom, dateTo, period));
+      if (status && status !== "all") pos = pos.filter(p => p.status === status);
+      if (supplierId) pos = pos.filter(p => String(p.supplierId) === supplierId);
+
+      const byStatus: Record<string, number> = {};
+      const bySupplier: Record<string, { name: string; amount: number; orders: number }> = {};
+      const monthly: Record<string, { month: string; amount: number; orders: number }> = {};
+      for (const p of pos) {
+        byStatus[p.status || "draft"] = (byStatus[p.status || "draft"] || 0) + 1;
+        const sk = String(p.supplierId || p.supplierName || "Unknown");
+        if (!bySupplier[sk]) bySupplier[sk] = { name: p.supplierName || sk, amount: 0, orders: 0 };
+        bySupplier[sk].amount += parseFloat(p.totalAmount || "0");
+        bySupplier[sk].orders += 1;
+        const mk = new Date(p.createdAt).toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
+        if (!monthly[mk]) monthly[mk] = { month: mk, amount: 0, orders: 0 };
+        monthly[mk].amount += parseFloat(p.totalAmount || "0");
+        monthly[mk].orders += 1;
+      }
+      const totalSpend = pos.reduce((s, p) => s + parseFloat(p.totalAmount || "0"), 0);
+
+      res.json({
+        summary: { totalPOs: pos.length, totalSpend, avgPOValue: pos.length > 0 ? totalSpend / pos.length : 0 },
+        byStatus: Object.entries(byStatus).map(([name, value]) => ({ name, value })),
+        topSuppliers: Object.values(bySupplier).sort((a, b) => b.amount - a.amount).slice(0, 10),
+        monthly: Object.values(monthly),
+        rows: pos.slice(0, 100).map(p => ({ id: p.id, poNumber: p.poNumber, supplierName: p.supplierName, date: p.createdAt, status: p.status, amount: parseFloat(p.totalAmount || "0") })),
+      });
+    } catch (e) { next(e); }
+  });
+
+  // PAYROLL report
+  app.get("/api/reports/payroll", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const storage = getStorage();
+      const user = req.user as any;
+      const { month, year, departmentId, slipStatus } = req.query as any;
+
+      const allPayslips = await (storage as any).getAllPayslips?.() || [];
+      let slips = (user.role === "superuser" ? allPayslips : (allPayslips as any[]).filter((p: any) => p.companyId === user.companyId)) as any[];
+      if (month && month !== "all") slips = slips.filter(p => String(p.periodMonth) === month);
+      if (year) slips = slips.filter(p => String(p.periodYear) === year);
+      if (slipStatus && slipStatus !== "all") slips = slips.filter(p => p.status === slipStatus);
+
+      const allEmps = await (storage as any).getAllEmployees?.() || [];
+      const allDepts = await (storage as any).getAllDepartments?.() || [];
+      const deptName = (id: any) => (allDepts as any[]).find(d => d.id === id)?.name || "General";
+      const empMap = Object.fromEntries((allEmps as any[]).map(e => [e.id, e]));
+
+      // Filter by department via employee
+      let filteredSlips = slips;
+      if (departmentId && departmentId !== "all") {
+        const deptEmpIds = new Set((allEmps as any[]).filter(e => String(e.departmentId) === departmentId).map(e => e.id));
+        filteredSlips = slips.filter(p => deptEmpIds.has(p.employeeId));
+      }
+
+      const byStatus: Record<string, number> = {};
+      const byDept: Record<string, { name: string; gross: number; net: number; count: number }> = {};
+      const monthly: Record<string, { month: string; gross: number; net: number; count: number }> = {};
+
+      for (const p of filteredSlips) {
+        byStatus[p.status || "draft"] = (byStatus[p.status || "draft"] || 0) + 1;
+        const emp = empMap[p.employeeId];
+        const dn = emp ? deptName(emp.departmentId) : "General";
+        if (!byDept[dn]) byDept[dn] = { name: dn, gross: 0, net: 0, count: 0 };
+        byDept[dn].gross += parseFloat(p.grossPay || "0");
+        byDept[dn].net += parseFloat(p.netPay || "0");
+        byDept[dn].count += 1;
+        const mk = `${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][(p.periodMonth || 1) - 1]} ${String(p.periodYear).slice(-2)}`;
+        if (!monthly[mk]) monthly[mk] = { month: mk, gross: 0, net: 0, count: 0 };
+        monthly[mk].gross += parseFloat(p.grossPay || "0");
+        monthly[mk].net += parseFloat(p.netPay || "0");
+        monthly[mk].count += 1;
+      }
+
+      const totalGross = filteredSlips.reduce((s, p) => s + parseFloat(p.grossPay || "0"), 0);
+      const totalNet = filteredSlips.reduce((s, p) => s + parseFloat(p.netPay || "0"), 0);
+      const totalDed = filteredSlips.reduce((s, p) => s + parseFloat(p.pf || "0") + parseFloat(p.tax || "0") + parseFloat(p.otherDeductions || "0"), 0);
+
+      res.json({
+        summary: { totalSlips: filteredSlips.length, totalGross, totalNet, totalDeductions: totalDed, paid: byStatus["paid"] || 0 },
+        byStatus: Object.entries(byStatus).map(([name, value]) => ({ name, value })),
+        byDepartment: Object.values(byDept).sort((a, b) => b.net - a.net),
+        monthly: Object.values(monthly),
+        rows: filteredSlips.slice(0, 100).map(p => {
+          const emp = empMap[p.employeeId];
+          return { id: p.id, employeeName: emp ? `${emp.firstName} ${emp.lastName || ""}`.trim() : `#${p.employeeId}`, period: `${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][(p.periodMonth||1)-1]} ${p.periodYear}`, gross: parseFloat(p.grossPay || "0"), net: parseFloat(p.netPay || "0"), status: p.status };
+        }),
+      });
+    } catch (e) { next(e); }
+  });
+
+  // Ticket Comments (conversation thread)
+  app.get("/api/support-tickets/:id/comments", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const storage = getStorage();
+      const ticketId = parseInt(req.params.id);
+      const allMoves = await (storage as any).getAllStockMoves?.() || [];
+      // We piggyback on lead discussions for comments since no separate collection
+      // Use a simple in-memory store on the ticket's notes field for now
+      const ticket = await (storage as any).getSupportTicket?.(ticketId);
+      if (!ticket) return res.status(404).json({ message: "Not found" });
+      const comments = ticket.comments ? JSON.parse(ticket.comments) : [];
+      res.json(comments);
+    } catch (e) { next(e); }
+  });
+
+  app.post("/api/support-tickets/:id/comments", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const storage = getStorage();
+      const ticketId = parseInt(req.params.id);
+      const { text } = req.body;
+      const user = req.user as any;
+      const ticket = await (storage as any).getSupportTicket?.(ticketId);
+      if (!ticket) return res.status(404).json({ message: "Not found" });
+      const comments = ticket.comments ? JSON.parse(ticket.comments) : [];
+      const newComment = { id: Date.now(), author: user.name || user.username, role: user.role, text, createdAt: new Date().toISOString() };
+      comments.push(newComment);
+      await storage.updateSupportTicket(ticketId, { ...ticket, comments: JSON.stringify(comments) });
+      res.json(newComment);
+    } catch (e) { next(e); }
+  });
+
+  // Bulk payroll
+  app.post("/api/payroll/generate-bulk", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const storage = getStorage();
+      const user = req.user as any;
+      const { month, year, employeeIds } = req.body;
+      if (!month || !year) return res.status(400).json({ message: "month and year required" });
+
+      const allEmps = await storage.getAllEmployees ? await storage.getAllEmployees() : [];
+      const emps = (user.role === "superuser" ? allEmps : (allEmps as any[]).filter((e: any) => e.companyId === user.companyId))
+        .filter((e: any) => !employeeIds || employeeIds.includes(e.id));
+
+      const results = [];
+      for (const emp of emps as any[]) {
+        try {
+          const basic = parseFloat(emp.basicSalary || "0");
+          const hra = basic * 0.4;
+          const allowances = basic * 0.2;
+          const pf = basic * 0.12;
+          const net = basic + hra + allowances - pf;
+          const payslipNumber = `PAY-${year}-${String(month).padStart(2, "0")}-${emp.id}`;
+          const data = {
+            payslipNumber, employeeId: emp.id, employeeName: emp.name, employeeCode: emp.employeeCode,
+            month, year, basic: String(basic), hra: String(hra), allowances: String(allowances),
+            pf: String(pf), tax: "0", otherDeductions: "0", otherEarnings: "0", lopDays: 0,
+            grossPay: String(basic + hra + allowances), netPay: String(net), status: "draft",
+            companyId: emp.companyId || user.companyId,
+          };
+          const payslip = await storage.createPayslip(data as any);
+          results.push({ employeeId: emp.id, name: emp.name, payslipId: payslip.id, status: "created" });
+        } catch (err: any) {
+          results.push({ employeeId: emp.id, name: emp.name, status: "error", error: err.message });
+        }
+      }
+      res.json({ generated: results.filter(r => r.status === "created").length, errors: results.filter(r => r.status === "error").length, results });
+    } catch (e) { next(e); }
+  });
+
+  // Inventory stock adjustment
+  app.post("/api/inventory/:id/adjust", async (req: any, res: any, next: any) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const storage = getStorage();
+      const id = parseInt(req.params.id);
+      const { adjustment, reason } = req.body;
+      const item = await (storage as any).getInventoryItem?.(id) || await (storage as any).getById?.("inventory", id);
+      if (!item) return res.status(404).json({ message: "Not found" });
+      const newQty = Math.max(0, (item.quantity || 0) + parseInt(adjustment));
+      await storage.updateInventoryItem(id, { quantity: newQty });
+      res.json({ id, oldQuantity: item.quantity, newQuantity: newQty, adjustment, reason });
+    } catch (e) { next(e); }
   });
 
   // Excel Import/Export/Templates
@@ -2210,6 +4388,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const paymentData = insertPaymentSchema.parse({ ...req.body, companyId: user.companyId });
       const storage = getStorage();
       const payment = await storage.createPayment(paymentData);
+
+      // Cross-module link: mark linked invoice as paid
+      const invoiceId = (paymentData as any).invoiceId;
+      if (invoiceId) {
+        try {
+          const invoice = await storage.getInvoice(Number(invoiceId));
+          if (invoice && invoice.status !== 'paid') {
+            await storage.updateInvoice(Number(invoiceId), { status: 'paid' } as any);
+          }
+        } catch (invErr) {
+          console.error('[payment] failed to mark invoice as paid:', invErr);
+        }
+      }
+
       res.status(201).json(payment);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -2468,6 +4660,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/purchase-orders", async (req, res, next) => {
     try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
       const storage = getStorage();
       const purchaseOrders = await storage.getAllPurchaseOrders();
       const user = req.user as any;
@@ -2602,6 +4795,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       next(error);
     }
+  });
+
+  // PDF download routes for new modules
+  app.get("/api/grns/:id/download-pdf", async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      const storage = getStorage();
+      const grn = await storage.getGrn(id);
+      if (!grn) return res.status(404).json({ message: "GRN not found" });
+      const pdfBuffer = await pdfGenerator.generateGrnPDF(grn);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="GRN-${grn.grnNumber || id}.pdf"`);
+      res.send(pdfBuffer);
+    } catch (error) { next(error); }
+  });
+
+  app.get("/api/delivery-orders/:id/download-pdf", async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      const storage = getStorage();
+      const order = await storage.getDeliveryOrder(id);
+      if (!order) return res.status(404).json({ message: "Delivery order not found" });
+      const pdfBuffer = await pdfGenerator.generateDeliveryOrderPDF(order);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="DO-${order.deliveryNumber || id}.pdf"`);
+      res.send(pdfBuffer);
+    } catch (error) { next(error); }
+  });
+
+  app.get("/api/production-orders/:id/download-pdf", async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      const storage = getStorage();
+      const order = await storage.getProductionOrder(id);
+      if (!order) return res.status(404).json({ message: "Production order not found" });
+      const pdfBuffer = await pdfGenerator.generateProductionOrderPDF(order);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="PRO-${order.orderNumber || id}.pdf"`);
+      res.send(pdfBuffer);
+    } catch (error) { next(error); }
+  });
+
+  app.get("/api/payroll/:id/download-pdf", async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      const storage = getStorage();
+      const payslip = await storage.getPayslip(id);
+      if (!payslip) return res.status(404).json({ message: "Payslip not found" });
+      const pdfBuffer = await pdfGenerator.generatePayslipPDF(payslip);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="Payslip-${id}.pdf"`);
+      res.send(pdfBuffer);
+    } catch (error) { next(error); }
+  });
+
+  app.get("/api/expense-claims/:id/download-pdf", async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      const storage = getStorage();
+      const claim = await storage.getExpenseClaim(id);
+      if (!claim) return res.status(404).json({ message: "Expense claim not found" });
+      const pdfBuffer = await pdfGenerator.generateExpenseClaimPDF(claim);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="Expense-${claim.claimNumber || id}.pdf"`);
+      res.send(pdfBuffer);
+    } catch (error) { next(error); }
+  });
+
+  app.get("/api/journal-entries/:id/download-pdf", async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      const storage = getStorage();
+      const entry = await storage.getJournalEntry(id);
+      if (!entry) return res.status(404).json({ message: "Journal entry not found" });
+      const pdfBuffer = await pdfGenerator.generateJournalEntryPDF(entry);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="JE-${entry.entryNumber || id}.pdf"`);
+      res.send(pdfBuffer);
+    } catch (error) { next(error); }
   });
 
   // Server is started in index.ts, so we don't need to start it here

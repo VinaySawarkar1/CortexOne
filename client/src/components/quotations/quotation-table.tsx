@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { openPdfUrl } from "@/lib/openPdf";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -157,7 +158,7 @@ export default function QuotationTable({
         <TableBody>
            {quotations.length > 0 ? (
              quotations.map((quotation, index) => (
-               <TableRow key={quotation.id || quotation._id || index} className="hover:bg-gray-50 border-b border-gray-100 cursor-pointer" onClick={() => setActive(quotation)}>
+               <TableRow key={resolveId(quotation) ?? index} className="hover:bg-gray-50 border-b border-gray-100 cursor-pointer" onClick={() => setActive(quotation)}>
                 <TableCell>
                   <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -277,11 +278,11 @@ export default function QuotationTable({
                 >
                   <Download className="h-4 w-4 mr-2" />Download PDF
                 </Button>
-              ) : (
+                ) : (
                 <Button 
                   variant="outline" 
                   className="text-gray-900 hover:bg-gray-100 border-gray-300"
-                  onClick={(e) => { e.stopPropagation(); const id = resolveId(active); if (!id) { alert('Proforma id missing'); setActive(null); return; } window.open(`/api/proformas/${id}/download-pdf`, '_blank'); setActive(null); }}
+                  onClick={async (e) => { e.stopPropagation(); const id = resolveId(active); if (!id) { alert('Proforma id missing'); setActive(null); return; } try { await openPdfUrl(`/api/proformas/${id}/download-pdf`); } catch (err) { alert('Failed to download proforma PDF'); } setActive(null); }}
                 >
                   <Download className="h-4 w-4 mr-2" />Download Proforma
                 </Button>
@@ -298,7 +299,7 @@ export default function QuotationTable({
                 <Button 
                   variant="outline" 
                   className="text-gray-900 hover:bg-gray-100 border-gray-300"
-                  onClick={(e) => { e.stopPropagation(); const id = resolveId(active); if (!id) { alert('Proforma id missing'); setActive(null); return; } window.open(`/api/proformas/${id}/download-pdf`, '_blank'); setActive(null); }}
+                  onClick={async (e) => { e.stopPropagation(); const id = resolveId(active); if (!id) { alert('Proforma id missing'); setActive(null); return; } try { await openPdfUrl(`/api/proformas/${id}/download-pdf`); } catch (err) { alert('Failed to open proforma PDF'); } setActive(null); }}
                 >
                   <Printer className="h-4 w-4 mr-2" />Print Proforma
                 </Button>

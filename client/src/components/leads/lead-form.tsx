@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { X, User, Building, Mail, Phone, MapPin, Target, FileText, CheckCircle2, Save, Loader2, Globe } from "lucide-react";
+import { X, User, Building, Mail, Phone, MapPin, Target, FileText, CheckCircle2, Save, Loader2, Globe, Star } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 interface LeadFormProps {
@@ -69,6 +69,9 @@ export default function LeadForm({ defaultValues, onSubmit, isSubmitting, mode }
     notes: "",
     probability: 0,
     opportunityStage: "prospecting",
+    rating: 0,
+    tags: "",
+    expectedValue: "",
   });
 
   // Update formData when defaultValues changes
@@ -93,6 +96,9 @@ export default function LeadForm({ defaultValues, onSubmit, isSubmitting, mode }
         notes: defaultValues.notes || "",
         probability: (defaultValues as any).probability ?? 0,
         opportunityStage: (defaultValues as any).opportunityStage || "prospecting",
+        rating: (defaultValues as any).rating ?? 0,
+        tags: (defaultValues as any).tags || "",
+        expectedValue: (defaultValues as any).expectedValue || "",
       });
     }
   }, [defaultValues]);
@@ -501,24 +507,77 @@ export default function LeadForm({ defaultValues, onSubmit, isSubmitting, mode }
               </Card>
             </div>
 
-            <Card className="border-0 shadow-lg glass-effect card-hover">
-              <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50 border-b border-slate-100">
-                <CardTitle className="flex items-center gap-2 text-slate-700">
-                  <FileText className="h-5 w-5" />
-                  Notes
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <Textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => handleChange("notes", e.target.value)}
-                  placeholder="Add any additional notes about this lead..."
-                  rows={6}
-                  className="resize-none transition-all duration-200"
-                />
-              </CardContent>
-            </Card>
+            {/* Rating, Tags, Expected Value, Notes */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="border-0 shadow-lg glass-effect card-hover">
+                <CardHeader className="bg-gradient-to-r from-yellow-50 to-amber-50 border-b border-yellow-100">
+                  <CardTitle className="flex items-center gap-2 text-amber-700">
+                    <Star className="h-5 w-5" />
+                    Lead Scoring
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 pt-6">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">Star Rating</Label>
+                    <div className="flex gap-2">
+                      {[1,2,3,4,5].map(n => (
+                        <button key={n} type="button"
+                          onClick={() => setFormData((p: any) => ({ ...p, rating: p.rating === n ? 0 : n }))}
+                          className="transition-transform hover:scale-110">
+                          <Star className={`h-7 w-7 ${(formData as any).rating >= n ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`} />
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      {(formData as any).rating === 0 && "Not rated"}
+                      {(formData as any).rating === 1 && "Cold — unlikely to convert"}
+                      {(formData as any).rating === 2 && "Warm — needs nurturing"}
+                      {(formData as any).rating === 3 && "Interested — follow up soon"}
+                      {(formData as any).rating === 4 && "Hot — high intent"}
+                      {(formData as any).rating === 5 && "Very hot — close immediately!"}
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">Expected Value (₹)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={(formData as any).expectedValue}
+                      onChange={e => setFormData((p: any) => ({ ...p, expectedValue: e.target.value }))}
+                      placeholder="e.g. 500000"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">Tags</Label>
+                    <Input
+                      value={(formData as any).tags}
+                      onChange={e => setFormData((p: any) => ({ ...p, tags: e.target.value }))}
+                      placeholder="e.g. enterprise, urgent, renewal"
+                    />
+                    <p className="text-xs text-gray-400">Comma-separated tags for easy filtering</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 shadow-lg glass-effect card-hover">
+                <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50 border-b border-slate-100">
+                  <CardTitle className="flex items-center gap-2 text-slate-700">
+                    <FileText className="h-5 w-5" />
+                    Notes
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <Textarea
+                    id="notes"
+                    value={formData.notes}
+                    onChange={(e) => handleChange("notes", e.target.value)}
+                    placeholder="Add any additional notes about this lead..."
+                    rows={6}
+                    className="resize-none transition-all duration-200"
+                  />
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
         </Tabs>

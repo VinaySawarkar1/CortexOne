@@ -1,9 +1,19 @@
+import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { pdfGenerator } from './pdf-generator';
-import { initializeStorage } from './storage-init';
+import { initializeStorage, getStorage } from './storage-init';
 import { setupAuth } from './auth';
+import { scrypt, randomBytes } from 'crypto';
+import { promisify } from 'util';
+
+const scryptAsync = promisify(scrypt);
+async function hashPwd(password: string) {
+  const salt = randomBytes(16).toString('hex');
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString('hex')}.${salt}`;
+}
 
 const app = express();
 app.use(express.json());
@@ -42,6 +52,38 @@ app.use((req, res, next) => {
 (async () => {
   // Initialize storage before setting up routes
   await initializeStorage();
+
+  // Seed superuser if not present
+  try {
+    const storage = getStorage();
+    const existing = await storage.getUserByUsername('superadmin');
+    if (!existing) {
+      const hashed = await hashPwd('Admin@123');
+      // Create a placeholder company for superuser
+      let superCompany: any;
+      try {
+        superCompany = await storage.createCompany({
+          name: 'Reckonix System',
+          email: 'superadmin@reckonix.com',
+          status: 'active',
+          maxUsers: 999,
+        });
+      } catch {}
+      await storage.createUser({
+        username: 'superadmin',
+        password: hashed,
+        name: 'Super Admin',
+        email: 'superadmin@reckonix.com',
+        role: 'superuser',
+        isActive: true,
+        companyId: superCompany?.id ?? 0,
+        permissions: [],
+      });
+      log('Superuser "superadmin" created with password "Admin@123"');
+    }
+  } catch (e) {
+    console.warn('Superuser seed failed (non-fatal):', e);
+  }
 
   // Setup authentication
   await setupAuth(app);

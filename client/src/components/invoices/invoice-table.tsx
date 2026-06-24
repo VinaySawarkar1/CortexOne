@@ -11,17 +11,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  Edit, 
-  Trash2, 
-  Eye, 
-  FileText, 
-  Receipt, 
+import {
+  Edit,
+  Trash2,
+  Eye,
+  FileText,
+  Receipt,
   Download,
   Printer,
   Calendar,
   User,
-  Building
+  Building,
+  CreditCard,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -32,6 +33,7 @@ interface InvoiceTableProps {
   onDelete: (id: number) => void;
   onGeneratePDF: (id: number) => void;
   onPrint: (id: number) => void;
+  onRecordPayment?: (invoice: Invoice) => void;
 }
 
 export default function InvoiceTable({
@@ -41,6 +43,7 @@ export default function InvoiceTable({
   onDelete,
   onGeneratePDF,
   onPrint,
+  onRecordPayment,
 }: InvoiceTableProps) {
   const [sortField, setSortField] = useState<keyof Invoice>("createdAt");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
@@ -293,6 +296,17 @@ export default function InvoiceTable({
                   >
                     <Printer className="h-4 w-4" />
                   </Button>
+                  {onRecordPayment && invoice.status !== 'paid' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onRecordPayment(invoice)}
+                      className="h-8 w-8 p-0 text-green-600 hover:text-green-700"
+                      title="Record Payment"
+                    >
+                      <CreditCard className="h-4 w-4" />
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"

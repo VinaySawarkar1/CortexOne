@@ -1,0 +1,421 @@
+
+> bizsuite@1.0.0 dev
+> tsx server/index.ts
+
+🔗 Initializing DynamoDB storage (eu-north-1)...
+Loaded 106 quotations with IDs starting from 500. Next ID will be 606
+No manufacturing_jobs.json file found, starting with empty data
+✅ DynamoDB tables ready (prefix: reckonix_)
+✅ DynamoDB storage initialized
+✅ Loaded 2 Replit plugin(s)
+12:42:05 AM [express] serving on 0.0.0.0:3001
+12:42:21 AM [express] GET /api/support-tickets 401 in 7ms :: {"message":"Unauthorized"}
+12:42:21 AM [express] GET /api/purchase-orders 401 in 4ms :: {"message":"Unauthorized"}
+12:42:21 AM [express] GET /api/boms 401 in 1ms :: {"message":"Unauthorized"}
+12:42:21 AM [express] GET /api/work-centres 401 in 1ms :: {"message":"Unauthorized"}
+12:42:21 AM [express] GET /api/production-orders 401 in 1ms :: {"message":"Unauthorized"}
+12:42:21 AM [express] GET /api/rfqs 401 in 1ms :: {"message":"Unauthorized"}
+12:42:21 AM [express] GET /api/grns 401 in 1ms :: {"message":"Unauthorized"}
+12:42:21 AM [express] GET /api/delivery-orders 401 in 1ms :: {"message":"Unauthorized"}
+12:42:21 AM [express] GET /api/price-lists 401 in 1ms :: {"message":"Unauthorized"}
+12:42:21 AM [express] GET /api/appraisals 401 in 1ms :: {"message":"Unauthorized"}
+12:42:21 AM [express] GET /api/expense-claims 401 in 1ms :: {"message":"Unauthorized"}
+12:42:21 AM [express] GET /api/job-positions 401 in 1ms :: {"message":"Unauthorized"}
+12:42:21 AM [express] GET /api/job-applications 401 in 1ms :: {"message":"Unauthorized"}
+12:42:21 AM [express] GET /api/accounts 401 in 1ms :: {"message":"Unauthorized"}
+12:42:21 AM [express] GET /api/journal-entries 401 in 0ms :: {"message":"Unauthorized"}
+12:42:21 AM [express] GET /api/finance/summary 401 in 0ms :: {"message":"Unauthorized"}
+12:42:21 AM [express] GET /api/crm-analytics 401 in 0ms :: {"message":"Unauthorized"}
+12:42:21 AM [express] GET /api/crm-email-templates 401 in 0ms :: {"message":"Unauthorized"}
+12:42:21 AM [express] GET /api/leads 401 in 1ms :: {"message":"Unauthorized"}
+12:42:21 AM [express] GET /api/customers 401 in 1ms :: {"message":"Unauthorized"}
+12:42:21 AM [express] GET /api/employees 401 in 1ms :: {"message":"Unauthorized"}
+12:42:21 AM [express] GET /api/inventory 401 in 1ms :: {"message":"Unauthorized"}
+12:42:21 AM [express] GET /api/warehouses 401 in 0ms :: {"message":"Unauthorized"}
+12:42:21 AM [express] GET /api/orders 401 in 0ms :: {"message":"Unauthorized"}
+12:42:21 AM [express] GET /api/invoices 401 in 1ms :: {"message":"Unauthorized"}
+12:42:21 AM [express] GET /api/quotations 401 in 1ms :: {"message":"Unauthorized"}
+12:42:21 AM [express] GET /api/payments 401 in 1ms :: {"message":"Unauthorized"}
+12:42:21 AM [express] GET /api/tasks 401 in 2ms :: {"message":"Unauthorized"}
+12:42:22 AM [express] GET /api/manufacturing-jobs 200 in 1363ms
+10:08:29 AM [express] GET /api/user 401 in 2ms
+10:08:42 AM [express] GET /api/user 401 in 1ms
+Login attempt for username: admin
+Authenticating user: admin
+User found: null
+Authentication failed: user not found or password mismatch
+Login failed: Invalid credentials
+10:08:47 AM [express] POST /api/login 401 in 957ms :: {"message":"Invalid credentials"}
+Login attempt for username: admin
+Authenticating user: admin
+User found: null
+Authentication failed: user not found or password mismatch
+Login failed: Invalid credentials
+10:08:58 AM [express] POST /api/login 401 in 329ms :: {"message":"Invalid credentials"}
+Login attempt for username: superuser
+Authenticating user: superuser
+User found: null
+Authentication failed: user not found or password mismatch
+Login failed: Invalid credentials
+10:09:10 AM [express] POST /api/login 401 in 321ms :: {"message":"Invalid credentials"}
+Login attempt for username: admin
+Authenticating user: admin
+User found: null
+Authentication failed: user not found or password mismatch
+Login failed: Invalid credentials
+10:18:11 AM [express] POST /api/login 401 in 877ms :: {"message":"Invalid credentials"}
+Login attempt for username: admin
+Authenticating user: admin
+User found: null
+Authentication failed: user not found or password mismatch
+Login failed: Invalid credentials
+10:18:19 AM [express] POST /api/login 401 in 215ms :: {"message":"Invalid credentials"}
+Login attempt for username: admin
+Authenticating user: admin
+User found: null
+Authentication failed: user not found or password mismatch
+Login failed: Invalid credentials
+10:22:15 AM [express] POST /api/login 401 in 1519ms :: {"message":"Invalid credentials"}
+10:22:20 AM [express] GET /api/user 401 in 1ms
+Login attempt for username: admin
+Authenticating user: admin
+User found: null
+Authentication failed: user not found or password mismatch
+Login failed: Invalid credentials
+10:22:31 AM [express] POST /api/login 401 in 227ms :: {"message":"Invalid credentials"}
+Login attempt for username: admin
+Authenticating user: admin
+User found: null
+Authentication failed: user not found or password mismatch
+Login failed: Invalid credentials
+10:23:35 AM [express] POST /api/login 401 in 484ms :: {"message":"Invalid credentials"}
+Login attempt for username: admin
+Authenticating user: admin
+User found: null
+Authentication failed: user not found or password mismatch
+Login failed: Invalid credentials
+10:23:43 AM [express] POST /api/login 401 in 324ms :: {"message":"Invalid credentials"}
+Login attempt for username: vinay
+Authenticating user: vinay
+User found: null
+Authentication failed: user not found or password mismatch
+Login failed: Invalid credentials
+10:23:56 AM [express] POST /api/login 401 in 229ms :: {"message":"Invalid credentials"}
+Login attempt for username: superadmin
+Authenticating user: superadmin
+User found: {
+  id: 1,
+  username: 'superadmin',
+  isActive: true,
+  role: 'superuser',
+  companyId: 0
+}
+Comparing passwords, stored hash format: valid
+Password comparison result: match
+Password matched, checking user status...
+Superuser login successful
+User authenticated, creating session
+Login successful for user: superadmin
+10:31:55 AM [express] POST /api/login 200 in 942ms :: {"isActive":true,"companyId":0,"role":"superuse…
+10:31:56 AM [express] GET /api/leads 200 in 414ms :: []
+10:31:56 AM [express] GET /api/orders 200 in 876ms :: []
+10:31:56 AM [express] GET /api/invoices 200 in 816ms :: []
+10:31:56 AM [express] GET /api/tasks 200 in 814ms :: []
+10:32:11 AM [express] GET /api/support-tickets 200 in 673ms :: []
+10:32:11 AM [express] GET /api/crm-analytics 500 in 438ms :: {"message":"getStorage(...).getCrmStages…
+10:32:11 AM [express] GET /api/crm-activities 200 in 744ms :: []
+10:32:11 AM [express] GET /api/inventory 200 in 745ms :: []
+10:32:26 AM [express] GET /api/leads 304 in 533ms :: []
+10:32:27 AM [express] GET /api/lead-categories 200 in 419ms :: []
+10:32:27 AM [express] GET /api/lead-sources 200 in 425ms :: []
+10:32:33 AM [express] GET /api/tasks 304 in 560ms :: []
+10:32:33 AM [express] GET /api/orders 304 in 579ms :: []
+10:32:33 AM [express] GET /api/invoices 304 in 576ms :: []
+10:32:33 AM [express] GET /api/crm-stages 200 in 573ms :: []
+10:32:33 AM [express] GET /api/crm-lost-reasons 200 in 849ms :: []
+10:32:36 AM [express] POST /api/crm-stages 201 in 922ms :: {"name":"New","sequence":1,"probability":1…
+10:32:38 AM [express] POST /api/crm-stages 201 in 1258ms :: {"name":"Qualified","sequence":2,"probabi…
+10:32:38 AM [express] POST /api/crm-stages 201 in 804ms :: {"name":"Proposition","sequence":3,"probab…
+10:32:39 AM [express] POST /api/crm-stages 201 in 833ms :: {"name":"Negotiation","sequence":4,"probab…
+10:32:41 AM [express] POST /api/crm-stages 201 in 1614ms :: {"name":"Won","sequence":5,"probability":…
+10:32:42 AM [express] GET /api/crm-stages 200 in 566ms :: [{"probability":10,"isActive":true,"company…
+10:32:53 AM [express] GET /api/support-tickets 304 in 920ms :: []
+10:32:53 AM [express] GET /api/inventory 304 in 917ms :: []
+10:32:55 AM [express] GET /api/customers 200 in 777ms :: []
+10:33:00 AM [express] GET /api/leads 304 in 462ms :: []
+10:33:00 AM [express] GET /api/crm-email-templates 200 in 460ms :: []
+10:33:04 AM [express] GET /api/orders 304 in 387ms :: []
+10:33:04 AM [express] GET /api/invoices 304 in 448ms :: []
+10:33:04 AM [express] GET /api/tasks 304 in 446ms :: []
+10:33:04 AM [express] GET /api/crm-analytics 500 in 250ms :: {"message":"getStorage(...).getCrmStages…
+10:33:29 AM [express] GET /api/inventory 304 in 442ms :: []
+10:33:29 AM [express] GET /api/support-tickets 304 in 450ms :: []
+10:33:29 AM [express] GET /api/company-settings 200 in 524ms
+10:33:32 AM [express] GET /api/leads 304 in 470ms :: []
+10:33:32 AM [express] GET /api/companies 200 in 716ms :: []
+10:33:32 AM [express] GET /api/users 200 in 717ms :: [{"isActive":true,"companyId":0,"role":"superuse…
+10:33:52 AM [express] GET /api/orders 304 in 575ms :: []
+10:33:53 AM [express] GET /api/invoices 304 in 453ms :: []
+10:33:53 AM [express] GET /api/finance/summary 200 in 456ms :: {"assets":0,"liabilities":0,"equity":0…
+10:33:53 AM [express] GET /api/tasks 304 in 471ms :: []
+10:33:53 AM [express] GET /api/accounts 200 in 465ms :: []
+10:34:02 AM [express] GET /api/support-tickets 304 in 794ms :: []
+10:34:02 AM [express] GET /api/inventory 304 in 793ms :: []
+10:34:04 AM [express] GET /api/leads 304 in 445ms :: []
+10:34:04 AM [express] GET /api/journal-entries 200 in 443ms :: []
+10:52:05 AM [express] GET /api/user 200 in 273ms :: {"isActive":true,"companyId":0,"role":"superuser"…
+10:52:05 AM [express] GET /api/invoices 304 in 611ms :: []
+10:52:05 AM [express] GET /api/orders 304 in 613ms :: []
+10:52:05 AM [express] GET /api/leads 304 in 618ms :: []
+10:52:05 AM [express] GET /api/tasks 304 in 617ms :: []
+10:52:10 AM [express] GET /api/crm-analytics 500 in 222ms :: {"message":"getStorage(...).getCrmStages…
+10:52:10 AM [express] GET /api/crm-activities 304 in 446ms :: []
+10:52:10 AM [express] GET /api/inventory 304 in 449ms :: []
+10:52:10 AM [express] GET /api/support-tickets 304 in 455ms :: []
+10:52:16 AM [express] GET /api/crm-lost-reasons 304 in 406ms :: []
+10:52:16 AM [express] GET /api/crm-stages 304 in 604ms :: [{"probability":10,"isActive":true,"company…
+10:52:23 AM [express] GET /api/lead-sources 304 in 691ms :: []
+10:52:23 AM [express] GET /api/lead-categories 304 in 695ms :: []
+10:52:30 AM [express] GET /api/crm-analytics 500 in 222ms :: {"message":"getStorage(...).getCrmStages…
+10:52:36 AM [express] GET /api/orders 304 in 527ms :: []
+10:52:36 AM [express] GET /api/leads 304 in 536ms :: []
+10:52:36 AM [express] GET /api/tasks 304 in 411ms :: []
+10:52:36 AM [express] GET /api/invoices 304 in 416ms :: []
+10:52:41 AM [express] GET /api/customers 304 in 394ms :: []
+11:09:18 AM [express] GET /api/user 304 in 257ms :: {"isActive":true,"companyId":0,"role":"superuser"…
+11:09:18 AM [express] GET /api/orders 304 in 494ms :: []
+11:09:18 AM [express] GET /api/leads 304 in 499ms :: []
+11:09:18 AM [express] GET /api/invoices 304 in 508ms :: []
+11:09:18 AM [express] GET /api/inventory 304 in 601ms :: []
+11:09:18 AM [express] GET /api/tasks 304 in 609ms :: []
+11:09:18 AM [express] GET /api/support-tickets 304 in 606ms :: []
+11:09:19 AM [express] GET /api/customers 304 in 522ms :: []
+11:09:23 AM [express] GET /api/crm-analytics 500 in 262ms :: {"message":"getStorage(...).getCrmStages…
+11:09:24 AM [express] GET /api/crm-activities 304 in 493ms :: []
+11:09:27 AM [express] GET /api/crm-email-templates 304 in 967ms :: []
+11:28:13 PM [express] GET /api/user 401 in 4ms
+Login attempt for username: superadmin
+Authenticating user: superadmin
+User found: {
+  id: 1,
+  username: 'superadmin',
+  isActive: true,
+  role: 'superuser',
+  companyId: 0
+}
+Comparing passwords, stored hash format: valid
+Password comparison result: match
+Password matched, checking user status...
+Superuser login successful
+User authenticated, creating session
+Login successful for user: superadmin
+11:28:18 PM [express] POST /api/login 200 in 1370ms :: {"isActive":true,"companyId":0,"role":"superus…
+11:28:19 PM [express] GET /api/leads 304 in 495ms :: []
+11:28:20 PM [express] GET /api/tasks 304 in 1341ms :: []
+11:28:20 PM [express] GET /api/invoices 304 in 1487ms :: []
+11:28:20 PM [express] GET /api/orders 304 in 1493ms :: []
+11:28:25 PM [express] GET /api/crm-analytics 500 in 320ms :: {"message":"getStorage(...).getCrmStages…
+11:28:26 PM [express] GET /api/inventory 304 in 511ms :: []
+11:28:26 PM [express] GET /api/support-tickets 304 in 545ms :: []
+11:28:26 PM [express] GET /api/crm-activities 304 in 613ms :: []
+11:28:50 PM [express] GET /api/leads 304 in 673ms :: []
+11:28:51 PM [express] GET /api/lead-categories 304 in 549ms :: []
+11:28:51 PM [express] GET /api/lead-sources 304 in 628ms :: []
+11:29:14 PM [express] GET /api/invoices 304 in 712ms :: []
+11:29:14 PM [express] GET /api/inventory 304 in 725ms :: []
+11:29:14 PM [express] GET /api/crm-stages 304 in 726ms :: [{"probability":10,"isActive":true,"company…
+11:29:14 PM [express] GET /api/orders 304 in 753ms :: []
+11:29:14 PM [express] GET /api/tasks 304 in 740ms :: []
+11:29:14 PM [express] GET /api/support-tickets 304 in 738ms :: []
+11:29:15 PM [express] GET /api/crm-lost-reasons 304 in 654ms :: []
+11:29:51 PM [express] GET /api/leads 304 in 506ms :: []
+11:29:51 PM [express] GET /api/invoices 304 in 519ms :: []
+11:29:51 PM [express] GET /api/tasks 304 in 538ms :: []
+11:29:51 PM [express] GET /api/orders 304 in 542ms :: []
+11:29:51 PM [express] GET /api/support-tickets 304 in 547ms :: []
+11:29:51 PM [express] GET /api/inventory 304 in 550ms :: []
+11:29:54 PM [express] GET /api/customers 304 in 1625ms :: []
+11:29:58 PM [express] GET /api/crm-email-templates 304 in 490ms :: []
+11:30:10 PM [express] GET /api/reports/sales 200 in 444ms
+11:30:21 PM [express] GET /api/reports/inventory 200 in 436ms
+11:30:22 PM [express] GET /api/reports/hr 200 in 353ms
+11:30:23 PM [express] GET /api/departments 304 in 796ms :: []
+11:30:26 PM [express] GET /api/reports/sales 200 in 821ms
+11:30:31 PM [express] GET /api/leads 304 in 504ms :: []
+11:30:31 PM [express] GET /api/orders 304 in 445ms :: []
+11:30:31 PM [express] GET /api/inventory 304 in 497ms :: []
+11:30:31 PM [express] GET /api/support-tickets 304 in 519ms :: []
+11:30:31 PM [express] GET /api/invoices 304 in 545ms :: []
+11:30:31 PM [express] GET /api/tasks 304 in 559ms :: []
+11:30:31 PM [express] GET /api/proformas 200 in 235ms :: [{"id":1,"quotationId":1,"quotationNumber":"…
+11:30:31 PM [express] GET /api/quotations 200 in 519ms :: []
+11:30:43 PM [express] GET /api/payments 200 in 1109ms :: []
+11:30:44 PM [express] GET /api/sales-targets 200 in 750ms :: []
+11:30:45 PM [express] GET /api/delivery-orders 200 in 586ms :: []
+11:30:50 PM [express] GET /api/price-lists 200 in 578ms :: []
+11:30:58 PM [express] GET /api/crm-analytics 500 in 351ms :: {"message":"getStorage(...).getCrmStages…
+11:31:06 PM [express] GET /api/leads 304 in 623ms :: []
+11:31:06 PM [express] GET /api/orders 304 in 587ms :: []
+11:31:06 PM [express] GET /api/support-tickets 304 in 584ms :: []
+11:31:06 PM [express] GET /api/inventory 304 in 587ms :: []
+11:31:06 PM [express] GET /api/invoices 304 in 597ms :: []
+11:31:06 PM [express] GET /api/tasks 304 in 616ms :: []
+11:32:01 PM [express] GET /api/orders 304 in 504ms :: []
+11:32:01 PM [express] GET /api/leads 304 in 540ms :: []
+11:32:02 PM [express] GET /api/tasks 304 in 530ms :: []
+11:32:02 PM [express] GET /api/invoices 304 in 534ms :: []
+11:32:02 PM [express] GET /api/suppliers 200 in 538ms :: []
+11:32:02 PM [express] GET /api/rfqs 200 in 584ms :: []
+11:32:02 PM [express] GET /api/support-tickets 304 in 652ms :: []
+11:32:02 PM [express] GET /api/inventory 304 in 624ms :: []
+11:33:10 PM [express] GET /api/leads 304 in 641ms :: []
+11:33:10 PM [express] GET /api/invoices 304 in 503ms :: []
+11:33:10 PM [express] GET /api/inventory 304 in 524ms :: []
+11:33:10 PM [express] GET /api/support-tickets 304 in 550ms :: []
+11:33:10 PM [express] GET /api/orders 304 in 581ms :: []
+11:33:10 PM [express] GET /api/tasks 304 in 595ms :: []
+11:33:10 PM [express] GET /api/designations 304 in 604ms :: []
+11:33:10 PM [express] GET /api/employees 304 in 505ms :: []
+11:33:26 PM [express] GET /api/attendance 304 in 596ms :: []
+11:33:27 PM [express] GET /api/leave-types 304 in 518ms :: []
+11:33:27 PM [express] GET /api/leave-requests 304 in 577ms :: []
+11:33:29 PM [express] GET /api/payslips 304 in 775ms :: []
+11:33:35 PM [express] GET /api/appraisals 200 in 642ms :: []
+11:33:36 PM [express] GET /api/expense-claims 200 in 565ms :: []
+11:33:37 PM [express] GET /api/job-positions 200 in 497ms :: []
+11:33:37 PM [express] GET /api/job-applications 200 in 507ms :: []
+11:33:52 PM [express] GET /api/leads 304 in 611ms :: []
+11:33:52 PM [express] GET /api/inventory 304 in 606ms :: []
+11:33:52 PM [express] GET /api/tasks 304 in 610ms :: []
+11:33:52 PM [express] GET /api/invoices 304 in 635ms :: []
+11:33:52 PM [express] GET /api/support-tickets 304 in 636ms :: []
+11:33:52 PM [express] GET /api/orders 304 in 639ms :: []
+11:40:41 PM [express] GET /api/leads 304 in 577ms :: []
+11:40:42 PM [express] GET /api/orders 304 in 1251ms :: []
+11:40:42 PM [express] GET /api/support-tickets 304 in 1219ms :: []
+11:40:42 PM [express] GET /api/tasks 304 in 1221ms :: []
+11:40:42 PM [express] GET /api/inventory 304 in 1222ms :: []
+11:40:42 PM [express] GET /api/invoices 304 in 1529ms :: []
+11:40:51 PM [express] GET /api/employee-activities 200 in 269ms
+11:40:53 PM [express] GET /api/customers 304 in 546ms :: []
+11:40:58 PM [express] GET /api/accounts 304 in 489ms :: []
+11:40:58 PM [express] GET /api/finance/summary 304 in 496ms :: {"assets":0,"liabilities":0,"equity":0…
+11:41:15 PM [express] GET /api/orders 304 in 469ms :: []
+11:41:16 PM [express] GET /api/leads 304 in 529ms :: []
+11:41:16 PM [express] GET /api/invoices 304 in 399ms :: []
+11:41:16 PM [express] GET /api/tasks 304 in 570ms :: []
+11:41:16 PM [express] GET /api/support-tickets 304 in 570ms :: []
+11:41:16 PM [express] GET /api/inventory 304 in 571ms :: []
+11:41:16 PM [express] GET /api/company-settings 200 in 483ms
+11:47:02 PM [express] GET /api/invoices 304 in 1417ms :: []
+11:47:02 PM [express] GET /api/tasks 304 in 1419ms :: []
+11:47:03 PM [express] GET /api/support-tickets 304 in 1692ms :: []
+11:47:03 PM [express] GET /api/inventory 304 in 1720ms :: []
+11:47:03 PM [express] GET /api/orders 304 in 1729ms :: []
+11:47:03 PM [express] GET /api/leads 304 in 1738ms :: []
+11:47:03 PM [express] GET /api/company-settings 200 in 653ms
+11:55:45 PM [express] GET /api/tasks 304 in 1277ms :: []
+11:55:45 PM [express] GET /api/invoices 304 in 1294ms :: []
+11:55:45 PM [express] GET /api/support-tickets 304 in 1293ms :: []
+11:55:45 PM [express] GET /api/leads 304 in 1342ms :: []
+11:55:45 PM [express] GET /api/orders 304 in 1366ms :: []
+11:55:45 PM [express] GET /api/inventory 304 in 1361ms :: []
+11:55:46 PM [express] GET /api/company-settings 200 in 990ms
+[2m11:56:37 PM[22m [36m[1m[vite][22m[39m [32m✨ new dependencies optimized: [33m@radix-ui/react-switch[32m[39m
+[2m11:56:37 PM[22m [36m[1m[vite][22m[39m [32m✨ optimized dependencies changed. reloading[39m
+11:57:00 PM [express] GET /api/user 304 in 413ms :: {"isActive":true,"companyId":0,"role":"superuser"…
+11:57:01 PM [express] GET /api/invoices 304 in 783ms :: []
+11:57:01 PM [express] GET /api/leads 304 in 812ms :: []
+11:57:01 PM [express] GET /api/tasks 304 in 813ms :: []
+11:57:01 PM [express] GET /api/orders 304 in 818ms :: []
+12:12:56 AM [express] GET /api/support-tickets 304 in 1392ms :: []
+12:12:56 AM [express] GET /api/invoices 304 in 1402ms :: []
+12:12:56 AM [express] GET /api/leads 304 in 1726ms :: []
+12:12:56 AM [express] GET /api/tasks 304 in 1425ms :: []
+12:12:56 AM [express] GET /api/orders 304 in 1445ms :: []
+12:12:56 AM [express] GET /api/inventory 304 in 1426ms :: []
+12:12:56 AM [express] GET /api/company-settings 200 in 698ms
+12:15:16 AM [express] GET /api/user 401 in 3ms
+12:26:48 AM [express] GET /api/user 304 in 471ms :: {"isActive":true,"companyId":0,"role":"superuser"…
+12:26:49 AM [express] GET /api/leads 304 in 862ms :: []
+12:26:49 AM [express] GET /api/orders 304 in 859ms :: []
+12:26:49 AM [express] GET /api/invoices 304 in 861ms :: []
+12:26:49 AM [express] GET /api/tasks 304 in 863ms :: []
+12:27:01 AM [express] GET /api/support-tickets 304 in 695ms :: []
+12:27:02 AM [express] GET /api/my/today-punch 200 in 408ms
+12:27:02 AM [express] GET /api/inventory 304 in 665ms :: []
+12:27:26 AM [express] GET /api/orders 304 in 598ms :: []
+12:27:26 AM [express] GET /api/leads 304 in 624ms :: []
+12:27:26 AM [express] GET /api/invoices 304 in 671ms :: []
+12:27:26 AM [express] GET /api/tasks 304 in 671ms :: []
+12:35:27 AM [express] GET /api/user 200 in 376ms :: {"isActive":true,"companyId":0,"role":"superuser"…
+12:35:28 AM [express] GET /api/invoices 304 in 830ms :: []
+12:35:28 AM [express] GET /api/leads 304 in 835ms :: []
+12:35:28 AM [express] GET /api/orders 304 in 836ms :: []
+12:35:28 AM [express] GET /api/tasks 304 in 840ms :: []
+12:37:37 AM [express] GET /api/user 304 in 445ms :: {"isActive":true,"companyId":0,"role":"superuser"…
+12:37:37 AM [express] GET /api/orders 304 in 540ms :: []
+12:37:37 AM [express] GET /api/invoices 304 in 542ms :: []
+12:37:37 AM [express] GET /api/tasks 304 in 592ms :: []
+12:37:37 AM [express] GET /api/leads 304 in 600ms :: []
+12:38:06 AM [express] GET /api/my/today-punch 200 in 333ms
+12:38:07 AM [express] GET /api/support-tickets 304 in 654ms :: []
+12:38:07 AM [express] GET /api/inventory 304 in 631ms :: []
+12:39:03 AM [express] GET /api/orders 304 in 608ms :: []
+12:39:03 AM [express] GET /api/tasks 304 in 614ms :: []
+12:39:03 AM [express] GET /api/leads 304 in 622ms :: []
+12:39:03 AM [express] GET /api/support-tickets 304 in 619ms :: []
+12:39:03 AM [express] GET /api/invoices 304 in 627ms :: []
+12:39:04 AM [express] GET /api/my/today-punch 200 in 375ms
+12:39:04 AM [express] GET /api/employees 304 in 708ms :: []
+12:39:04 AM [express] GET /api/designations 304 in 713ms :: []
+12:39:04 AM [express] GET /api/departments 304 in 718ms :: []
+12:39:04 AM [express] GET /api/inventory 304 in 1387ms :: []
+12:39:08 AM [express] GET /api/my/today-punch 200 in 337ms
+12:39:09 AM [express] GET /api/attendance 304 in 784ms :: []
+12:40:06 AM [express] GET /api/inventory 304 in 917ms :: []
+12:40:06 AM [express] GET /api/support-tickets 304 in 921ms :: []
+12:40:06 AM [express] GET /api/tasks 304 in 929ms :: []
+12:40:06 AM [express] GET /api/invoices 304 in 933ms :: []
+12:40:06 AM [express] GET /api/leads 304 in 958ms :: []
+12:40:06 AM [express] GET /api/orders 304 in 952ms :: []
+12:40:06 AM [express] GET /api/my/payslips 200 in 374ms
+12:40:06 AM [express] GET /api/my/attendance 200 in 443ms
+12:40:06 AM [express] GET /api/my/profile 200 in 425ms
+12:40:06 AM [express] GET /api/my/leaves 200 in 470ms
+12:40:06 AM [express] GET /api/my/punch-calendar 200 in 474ms
+12:40:06 AM [express] GET /api/my/today-punch 200 in 511ms
+12:40:37 AM [express] GET /api/my/today-punch 200 in 454ms
+12:43:18 AM [express] GET /api/user 304 in 463ms :: {"isActive":true,"companyId":0,"role":"superuser"…
+12:43:19 AM [express] GET /api/support-tickets 304 in 998ms :: []
+12:43:19 AM [express] GET /api/invoices 304 in 1025ms :: []
+12:43:19 AM [express] GET /api/inventory 304 in 1022ms :: []
+12:43:19 AM [express] GET /api/leads 304 in 1051ms :: []
+12:43:19 AM [express] GET /api/orders 304 in 1043ms :: []
+12:43:19 AM [express] GET /api/tasks 304 in 1030ms :: []
+12:43:19 AM [express] GET /api/my/punch-calendar 200 in 437ms
+12:43:19 AM [express] GET /api/my/payslips 200 in 476ms
+12:43:19 AM [express] GET /api/my/leaves 200 in 478ms
+12:43:19 AM [express] GET /api/my/profile 200 in 510ms
+12:43:19 AM [express] GET /api/my/today-punch 200 in 530ms
+12:43:19 AM [express] GET /api/my/attendance 200 in 537ms
+12:43:44 AM [express] POST /api/my/clock-in 200 in 505ms
+12:43:50 AM [express] GET /api/my/today-punch 200 in 465ms
+10:14:37 PM [express] GET /api/my/today-punch 200 in 988ms
+10:14:38 PM [express] GET /api/support-tickets 304 in 1022ms :: []
+10:14:38 PM [express] GET /api/leads 304 in 1209ms :: []
+10:14:38 PM [express] GET /api/orders 304 in 1323ms :: []
+10:14:38 PM [express] GET /api/tasks 304 in 1031ms :: []
+10:14:38 PM [express] GET /api/my/payslips 200 in 264ms
+10:14:38 PM [express] GET /api/my/leaves 200 in 283ms
+10:14:38 PM [express] GET /api/my/attendance 200 in 318ms
+10:14:38 PM [express] GET /api/my/profile 200 in 315ms
+10:14:38 PM [express] GET /api/inventory 304 in 453ms :: []
+10:14:38 PM [express] GET /api/invoices 304 in 1589ms :: []
+10:14:38 PM [express] GET /api/my/punch-calendar 200 in 260ms
+9:51:39 AM [express] GET /api/user 401 in 12ms
+8:32:44 PM [express] GET /api/invoices 401 in 61ms :: {"message":"Unauthorized"}
+8:32:45 PM [express] GET /api/orders 401 in 5ms :: {"message":"Unauthorized"}
+8:32:45 PM [express] GET /api/tasks 401 in 4ms :: {"message":"Unauthorized"}
+8:32:45 PM [express] GET /api/leads 401 in 4ms :: {"message":"Unauthorized"}
+9:56:14 PM [express] GET /api/user 401 in 4ms

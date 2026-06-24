@@ -254,6 +254,35 @@ export default function OrdersPage() {
     window.open(`/api/orders/${order.id}/delivery-challan`, '_blank');
   };
 
+  // Confirm order mutation — auto-creates a Delivery Order on the server
+  const confirmOrderMutation = useMutation({
+    mutationFn: async (order: Order) => {
+      const res = await apiRequest("PUT", `/api/orders/${order.id}`, { status: 'confirmed' });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/delivery-orders"] });
+      toast({
+        title: "Order Confirmed",
+        description: "Order confirmed and delivery order created automatically.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: `Failed to confirm order: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleConfirmOrder = (order: Order) => {
+    if (confirm(`Confirm order ${order.orderNumber}? This will auto-create a Delivery Order.`)) {
+      confirmOrderMutation.mutate(order);
+    }
+  };
+
   // Filter orders based on search query
   const filteredOrders = orders?.filter(order => {
     if (!searchQuery) return true;
@@ -296,7 +325,7 @@ export default function OrdersPage() {
 
   return (
     <Layout>
-      <div className="py-6 px-4 sm:px-6 lg:px-8">
+      <div className="page-body">
         <PageHeader
           title="Order Management"
           subtitle="Create and manage customer orders"
@@ -314,7 +343,7 @@ export default function OrdersPage() {
           </div>
           <Button 
             onClick={() => setCreateDialogOpen(true)}
-            className="bg-[#800000] hover:bg-[#4B0000]"
+            className="bg-[#6366f1] hover:bg-[#4338ca]"
           >
             <Plus className="mr-2 h-4 w-4" />
             Create New Order
@@ -324,7 +353,7 @@ export default function OrdersPage() {
         {/* Orders Table */}
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin text-[#800000]" />
+            <Loader2 className="h-8 w-8 animate-spin text-[#6366f1]" />
           </div>
         ) : error ? (
           <div className="text-center py-8">
@@ -340,6 +369,7 @@ export default function OrdersPage() {
             onPrintInternalOrder={handlePrintInternalOrder}
             onGenerateInvoice={handleGenerateInvoice}
             onGenerateDeliveryChallan={handleGenerateDeliveryChallan}
+            onConfirm={handleConfirmOrder}
           />
         )}
 
@@ -542,7 +572,7 @@ export default function OrdersPage() {
                     Close
                   </Button>
                   <Button
-                    className="bg-[#800000] hover:bg-[#4B0000]"
+                    className="bg-[#6366f1] hover:bg-[#4338ca]"
                     onClick={() => {
                       setDetailsDialogOpen(false);
                       handleEdit(currentOrder);

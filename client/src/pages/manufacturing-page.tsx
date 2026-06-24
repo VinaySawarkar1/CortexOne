@@ -213,7 +213,7 @@ export default function ManufacturingPage() {
 
   return (
     <Layout>
-      <div className="py-6 px-4 sm:px-6 lg:px-8">
+      <div className="page-body">
         <PageHeader
           title="Manufacturing"
           subtitle="Manage manufacturing jobs and internal orders"

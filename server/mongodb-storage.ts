@@ -8,6 +8,23 @@ import {
   leadDiscussions, type LeadDiscussion, type InsertLeadDiscussion,
   leadCategories, type LeadCategory, type InsertLeadCategory,
   leadSources, type LeadSource, type InsertLeadSource,
+  crmStages, type CrmStage, type InsertCrmStage,
+  crmLostReasons, type CrmLostReason, type InsertCrmLostReason,
+  crmActivities, type CrmActivity, type InsertCrmActivity,
+  type CrmEmailTemplate, type InsertCrmEmailTemplate,
+  type Department, type InsertDepartment,
+  type Designation, type InsertDesignation,
+  type Employee, type InsertEmployee,
+  type Attendance, type InsertAttendance,
+  type LeaveType, type InsertLeaveType,
+  type LeaveRequest, type InsertLeaveRequest,
+  type Payslip, type InsertPayslip,
+  type Warehouse, type InsertWarehouse,
+  type StockLocation, type InsertStockLocation,
+  type StockQuant, type InsertStockQuant,
+  type StockMove, type InsertStockMove,
+  type StockTransfer, type InsertStockTransfer,
+  type ReorderRule, type InsertReorderRule,
   quotations, type Quotation, type InsertQuotation,
   orders, type Order, type InsertOrder,
   invoices, type Invoice, type InsertInvoice,
@@ -208,6 +225,23 @@ export class MongoDBStorage implements IStorage {
     leadDiscussions: Collection;
     leadCategories: Collection;
     leadSources: Collection;
+    crmStages: Collection;
+    crmLostReasons: Collection;
+    crmActivities: Collection;
+    crmEmailTemplates: Collection;
+    departments: Collection;
+    designations: Collection;
+    employees: Collection;
+    attendance: Collection;
+    leaveTypes: Collection;
+    leaveRequests: Collection;
+    payslips: Collection;
+    warehouses: Collection;
+    stockLocations: Collection;
+    stockQuants: Collection;
+    stockMoves: Collection;
+    stockTransfers: Collection;
+    reorderRules: Collection;
     quotations: Collection;
     orders: Collection;
     invoices: Collection;
@@ -243,6 +277,23 @@ export class MongoDBStorage implements IStorage {
       leadDiscussions: db.collection('leadDiscussions'),
       leadCategories: db.collection('leadCategories'),
       leadSources: db.collection('leadSources'),
+      crmStages: db.collection('crmStages'),
+      crmLostReasons: db.collection('crmLostReasons'),
+      crmActivities: db.collection('crmActivities'),
+      crmEmailTemplates: db.collection('crmEmailTemplates'),
+      departments: db.collection('departments'),
+      designations: db.collection('designations'),
+      employees: db.collection('employees'),
+      attendance: db.collection('attendance'),
+      leaveTypes: db.collection('leaveTypes'),
+      leaveRequests: db.collection('leaveRequests'),
+      payslips: db.collection('payslips'),
+      warehouses: db.collection('warehouses'),
+      stockLocations: db.collection('stockLocations'),
+      stockQuants: db.collection('stockQuants'),
+      stockMoves: db.collection('stockMoves'),
+      stockTransfers: db.collection('stockTransfers'),
+      reorderRules: db.collection('reorderRules'),
       quotations: db.collection('quotations'),
       orders: db.collection('orders'),
       invoices: db.collection('invoices'),
@@ -257,6 +308,9 @@ export class MongoDBStorage implements IStorage {
       supportTickets: db.collection('supportTickets'),
       contracts: db.collection('contracts'),
       companySettings: db.collection('company_settings'),
+      channels: db.collection('reckonix_channels'),
+      channelMessages: db.collection('reckonix_channel_messages'),
+      clockPunches: db.collection('reckonix_clock_punches'),
     };
 
     // Create indexes for better performance
@@ -582,6 +636,467 @@ export class MongoDBStorage implements IStorage {
   async deleteLeadSource(id: number): Promise<boolean> {
     const result = await this.collections.leadSources.deleteOne({ id });
     return result.deletedCount > 0;
+  }
+
+  // CRM Pipeline Stage operations
+  async getAllCrmStages(companyId?: number): Promise<CrmStage[]> {
+    const query = companyId ? { companyId } : {};
+    const results = await this.collections.crmStages.find(query).sort({ sequence: 1 }).toArray();
+    return results.map(({ _id, ...rest }) => ({ ...rest, id: rest.id })) as CrmStage[];
+  }
+
+  async createCrmStage(stage: InsertCrmStage): Promise<CrmStage> {
+    const id = await this.getNextSequenceValue('crmStages');
+    const doc = {
+      ...stage,
+      id,
+      sequence: stage.sequence ?? id,
+      probability: stage.probability ?? 0,
+      isWon: stage.isWon ?? false,
+      isActive: stage.isActive ?? true,
+      createdAt: new Date(),
+    };
+    await this.collections.crmStages.insertOne(doc);
+    return { ...doc } as CrmStage;
+  }
+
+  async updateCrmStage(id: number, update: Partial<InsertCrmStage>): Promise<CrmStage | undefined> {
+    const result = await this.collections.crmStages.findOneAndUpdate(
+      { id },
+      { $set: { ...update, updatedAt: new Date() } },
+      { returnDocument: 'after' }
+    );
+    return result ? ({ ...result, id: result.id } as CrmStage) : undefined;
+  }
+
+  async deleteCrmStage(id: number): Promise<boolean> {
+    const result = await this.collections.crmStages.deleteOne({ id });
+    return result.deletedCount > 0;
+  }
+
+  // CRM Lost Reason operations
+  async getAllCrmLostReasons(companyId?: number): Promise<CrmLostReason[]> {
+    const query = companyId ? { companyId } : {};
+    const results = await this.collections.crmLostReasons.find(query).toArray();
+    return results.map(({ _id, ...rest }) => ({ ...rest, id: rest.id })) as CrmLostReason[];
+  }
+
+  async createCrmLostReason(reason: InsertCrmLostReason): Promise<CrmLostReason> {
+    const id = await this.getNextSequenceValue('crmLostReasons');
+    const doc = {
+      ...reason,
+      id,
+      isActive: reason.isActive ?? true,
+      createdAt: new Date(),
+    };
+    await this.collections.crmLostReasons.insertOne(doc);
+    return { ...doc } as CrmLostReason;
+  }
+
+  async updateCrmLostReason(id: number, update: Partial<InsertCrmLostReason>): Promise<CrmLostReason | undefined> {
+    const result = await this.collections.crmLostReasons.findOneAndUpdate(
+      { id },
+      { $set: { ...update, updatedAt: new Date() } },
+      { returnDocument: 'after' }
+    );
+    return result ? ({ ...result, id: result.id } as CrmLostReason) : undefined;
+  }
+
+  async deleteCrmLostReason(id: number): Promise<boolean> {
+    const result = await this.collections.crmLostReasons.deleteOne({ id });
+    return result.deletedCount > 0;
+  }
+
+  // CRM Activity operations
+  async getCrmActivities(leadId: number): Promise<CrmActivity[]> {
+    const results = await this.collections.crmActivities.find({ leadId }).sort({ createdAt: -1 }).toArray();
+    return results.map(({ _id, ...rest }) => ({ ...rest, id: rest.id })) as CrmActivity[];
+  }
+
+  async getAllCrmActivities(companyId?: number): Promise<CrmActivity[]> {
+    const query = companyId ? { companyId } : {};
+    const results = await this.collections.crmActivities.find(query).sort({ createdAt: -1 }).toArray();
+    return results.map(({ _id, ...rest }) => ({ ...rest, id: rest.id })) as CrmActivity[];
+  }
+
+  async createCrmActivity(activity: InsertCrmActivity): Promise<CrmActivity> {
+    const id = await this.getNextSequenceValue('crmActivities');
+    const doc = {
+      ...activity,
+      id,
+      activityType: activity.activityType ?? 'todo',
+      status: activity.status ?? 'planned',
+      createdAt: new Date(),
+    };
+    await this.collections.crmActivities.insertOne(doc);
+    return { ...doc } as CrmActivity;
+  }
+
+  async updateCrmActivity(id: number, update: Partial<InsertCrmActivity>): Promise<CrmActivity | undefined> {
+    const result = await this.collections.crmActivities.findOneAndUpdate(
+      { id },
+      { $set: { ...update, updatedAt: new Date() } },
+      { returnDocument: 'after' }
+    );
+    return result ? ({ ...result, id: result.id } as CrmActivity) : undefined;
+  }
+
+  async deleteCrmActivity(id: number): Promise<boolean> {
+    const result = await this.collections.crmActivities.deleteOne({ id });
+    return result.deletedCount > 0;
+  }
+
+  // CRM Email Templates
+  async getCrmEmailTemplates(companyId?: number): Promise<CrmEmailTemplate[]> {
+    const docs = await this.collections.crmEmailTemplates.find(companyId ? { companyId } : {}).toArray();
+    return this.mapDocs<CrmEmailTemplate>(docs);
+  }
+  async createCrmEmailTemplate(insert: InsertCrmEmailTemplate): Promise<CrmEmailTemplate> {
+    const id = await this.getNextSequenceValue('crmEmailTemplates');
+    const doc = { ...insert, id, category: insert.category ?? 'general', isActive: insert.isActive ?? true, createdAt: new Date() };
+    await this.collections.crmEmailTemplates.insertOne(doc);
+    return doc as CrmEmailTemplate;
+  }
+  async updateCrmEmailTemplate(id: number, updates: Partial<InsertCrmEmailTemplate>): Promise<CrmEmailTemplate | undefined> {
+    const result = await this.collections.crmEmailTemplates.findOneAndUpdate({ id }, { $set: updates }, { returnDocument: 'after' });
+    return result ? ({ ...result, id: result.id } as CrmEmailTemplate) : undefined;
+  }
+  async deleteCrmEmailTemplate(id: number): Promise<boolean> {
+    const result = await this.collections.crmEmailTemplates.deleteOne({ id });
+    return result.deletedCount > 0;
+  }
+
+  // ==================== HRMS ====================
+  private mapDocs<T>(docs: any[]): T[] {
+    return docs.map(({ _id, ...rest }) => ({ ...rest, id: rest.id })) as T[];
+  }
+
+  // Departments
+  async getAllDepartments(companyId?: number): Promise<Department[]> {
+    const docs = await this.collections.departments.find(companyId ? { companyId } : {}).toArray();
+    return this.mapDocs<Department>(docs);
+  }
+  async getDepartment(id: number): Promise<Department | undefined> {
+    const doc = await this.collections.departments.findOne({ id });
+    return doc ? ({ ...doc, id: doc.id } as Department) : undefined;
+  }
+  async createDepartment(d: InsertDepartment): Promise<Department> {
+    const id = await this.getNextSequenceValue('departments');
+    const doc = { ...d, id, isActive: d.isActive ?? true, createdAt: new Date() };
+    await this.collections.departments.insertOne(doc);
+    return doc as Department;
+  }
+  async updateDepartment(id: number, update: Partial<InsertDepartment>): Promise<Department | undefined> {
+    const result = await this.collections.departments.findOneAndUpdate({ id }, { $set: { ...update, updatedAt: new Date() } }, { returnDocument: 'after' });
+    return result ? ({ ...result, id: result.id } as Department) : undefined;
+  }
+  async deleteDepartment(id: number): Promise<boolean> {
+    return (await this.collections.departments.deleteOne({ id })).deletedCount > 0;
+  }
+
+  // Designations
+  async getAllDesignations(companyId?: number): Promise<Designation[]> {
+    const docs = await this.collections.designations.find(companyId ? { companyId } : {}).toArray();
+    return this.mapDocs<Designation>(docs);
+  }
+  async getDesignation(id: number): Promise<Designation | undefined> {
+    const doc = await this.collections.designations.findOne({ id });
+    return doc ? ({ ...doc, id: doc.id } as Designation) : undefined;
+  }
+  async createDesignation(d: InsertDesignation): Promise<Designation> {
+    const id = await this.getNextSequenceValue('designations');
+    const doc = { ...d, id, isActive: d.isActive ?? true, createdAt: new Date() };
+    await this.collections.designations.insertOne(doc);
+    return doc as Designation;
+  }
+  async updateDesignation(id: number, update: Partial<InsertDesignation>): Promise<Designation | undefined> {
+    const result = await this.collections.designations.findOneAndUpdate({ id }, { $set: { ...update, updatedAt: new Date() } }, { returnDocument: 'after' });
+    return result ? ({ ...result, id: result.id } as Designation) : undefined;
+  }
+  async deleteDesignation(id: number): Promise<boolean> {
+    return (await this.collections.designations.deleteOne({ id })).deletedCount > 0;
+  }
+
+  // Employees
+  async getAllEmployees(companyId?: number): Promise<Employee[]> {
+    const docs = await this.collections.employees.find(companyId ? { companyId } : {}).toArray();
+    return this.mapDocs<Employee>(docs);
+  }
+  async getEmployee(id: number): Promise<Employee | undefined> {
+    const doc = await this.collections.employees.findOne({ id });
+    return doc ? ({ ...doc, id: doc.id } as Employee) : undefined;
+  }
+  async createEmployee(e: InsertEmployee): Promise<Employee> {
+    const id = await this.getNextSequenceValue('employees');
+    const doc = { ...e, id, status: e.status ?? 'active', employmentType: e.employmentType ?? 'full_time', createdAt: new Date() };
+    await this.collections.employees.insertOne(doc);
+    return doc as Employee;
+  }
+  async updateEmployee(id: number, update: Partial<InsertEmployee>): Promise<Employee | undefined> {
+    const result = await this.collections.employees.findOneAndUpdate({ id }, { $set: { ...update, updatedAt: new Date() } }, { returnDocument: 'after' });
+    return result ? ({ ...result, id: result.id } as Employee) : undefined;
+  }
+  async deleteEmployee(id: number): Promise<boolean> {
+    return (await this.collections.employees.deleteOne({ id })).deletedCount > 0;
+  }
+
+  // Attendance
+  async getAllAttendance(companyId?: number): Promise<Attendance[]> {
+    const docs = await this.collections.attendance.find(companyId ? { companyId } : {}).sort({ date: -1 }).toArray();
+    return this.mapDocs<Attendance>(docs);
+  }
+  async getAttendanceByEmployee(employeeId: number): Promise<Attendance[]> {
+    const docs = await this.collections.attendance.find({ employeeId }).sort({ date: -1 }).toArray();
+    return this.mapDocs<Attendance>(docs);
+  }
+  async createAttendance(a: InsertAttendance): Promise<Attendance> {
+    const id = await this.getNextSequenceValue('attendance');
+    const doc = { ...a, id, status: a.status ?? 'present', createdAt: new Date() };
+    await this.collections.attendance.insertOne(doc);
+    return doc as Attendance;
+  }
+  async updateAttendance(id: number, update: Partial<InsertAttendance>): Promise<Attendance | undefined> {
+    const result = await this.collections.attendance.findOneAndUpdate({ id }, { $set: { ...update, updatedAt: new Date() } }, { returnDocument: 'after' });
+    return result ? ({ ...result, id: result.id } as Attendance) : undefined;
+  }
+  async deleteAttendance(id: number): Promise<boolean> {
+    return (await this.collections.attendance.deleteOne({ id })).deletedCount > 0;
+  }
+
+  // Leave Types
+  async getAllLeaveTypes(companyId?: number): Promise<LeaveType[]> {
+    const docs = await this.collections.leaveTypes.find(companyId ? { companyId } : {}).toArray();
+    return this.mapDocs<LeaveType>(docs);
+  }
+  async createLeaveType(t: InsertLeaveType): Promise<LeaveType> {
+    const id = await this.getNextSequenceValue('leaveTypes');
+    const doc = { ...t, id, isActive: t.isActive ?? true, isPaid: t.isPaid ?? true, createdAt: new Date() };
+    await this.collections.leaveTypes.insertOne(doc);
+    return doc as LeaveType;
+  }
+  async updateLeaveType(id: number, update: Partial<InsertLeaveType>): Promise<LeaveType | undefined> {
+    const result = await this.collections.leaveTypes.findOneAndUpdate({ id }, { $set: { ...update, updatedAt: new Date() } }, { returnDocument: 'after' });
+    return result ? ({ ...result, id: result.id } as LeaveType) : undefined;
+  }
+  async deleteLeaveType(id: number): Promise<boolean> {
+    return (await this.collections.leaveTypes.deleteOne({ id })).deletedCount > 0;
+  }
+
+  // Leave Requests
+  async getAllLeaveRequests(companyId?: number): Promise<LeaveRequest[]> {
+    const docs = await this.collections.leaveRequests.find(companyId ? { companyId } : {}).sort({ createdAt: -1 }).toArray();
+    return this.mapDocs<LeaveRequest>(docs);
+  }
+  async getLeaveRequest(id: number): Promise<LeaveRequest | undefined> {
+    const doc = await this.collections.leaveRequests.findOne({ id });
+    return doc ? ({ ...doc, id: doc.id } as LeaveRequest) : undefined;
+  }
+  async createLeaveRequest(r: InsertLeaveRequest): Promise<LeaveRequest> {
+    const id = await this.getNextSequenceValue('leaveRequests');
+    const doc = { ...r, id, status: r.status ?? 'pending', createdAt: new Date() };
+    await this.collections.leaveRequests.insertOne(doc);
+    return doc as LeaveRequest;
+  }
+  async updateLeaveRequest(id: number, update: Partial<InsertLeaveRequest>): Promise<LeaveRequest | undefined> {
+    const result = await this.collections.leaveRequests.findOneAndUpdate({ id }, { $set: { ...update, updatedAt: new Date() } }, { returnDocument: 'after' });
+    return result ? ({ ...result, id: result.id } as LeaveRequest) : undefined;
+  }
+  async deleteLeaveRequest(id: number): Promise<boolean> {
+    return (await this.collections.leaveRequests.deleteOne({ id })).deletedCount > 0;
+  }
+
+  // Payslips
+  async getAllPayslips(companyId?: number): Promise<Payslip[]> {
+    const docs = await this.collections.payslips.find(companyId ? { companyId } : {}).sort({ periodYear: -1, periodMonth: -1 }).toArray();
+    return this.mapDocs<Payslip>(docs);
+  }
+  async getPayslip(id: number): Promise<Payslip | undefined> {
+    const doc = await this.collections.payslips.findOne({ id });
+    return doc ? ({ ...doc, id: doc.id } as Payslip) : undefined;
+  }
+  async createPayslip(p: InsertPayslip): Promise<Payslip> {
+    const id = await this.getNextSequenceValue('payslips');
+    const doc = { ...p, id, status: p.status ?? 'draft', createdAt: new Date() };
+    await this.collections.payslips.insertOne(doc);
+    return doc as Payslip;
+  }
+  async updatePayslip(id: number, update: Partial<InsertPayslip>): Promise<Payslip | undefined> {
+    const result = await this.collections.payslips.findOneAndUpdate({ id }, { $set: { ...update, updatedAt: new Date() } }, { returnDocument: 'after' });
+    return result ? ({ ...result, id: result.id } as Payslip) : undefined;
+  }
+  async deletePayslip(id: number): Promise<boolean> {
+    return (await this.collections.payslips.deleteOne({ id })).deletedCount > 0;
+  }
+
+  // ==================== Inventory / Warehouse ====================
+  // Warehouses
+  async getAllWarehouses(companyId?: number): Promise<Warehouse[]> {
+    const docs = await this.collections.warehouses.find(companyId ? { companyId } : {}).toArray();
+    return this.mapDocs<Warehouse>(docs);
+  }
+  async getWarehouse(id: number): Promise<Warehouse | undefined> {
+    const doc = await this.collections.warehouses.findOne({ id });
+    return doc ? ({ ...doc, id: doc.id } as Warehouse) : undefined;
+  }
+  async createWarehouse(w: InsertWarehouse): Promise<Warehouse> {
+    const id = await this.getNextSequenceValue('warehouses');
+    const doc = { ...w, id, isActive: w.isActive ?? true, createdAt: new Date() };
+    await this.collections.warehouses.insertOne(doc);
+    return doc as Warehouse;
+  }
+  async updateWarehouse(id: number, update: Partial<InsertWarehouse>): Promise<Warehouse | undefined> {
+    const result = await this.collections.warehouses.findOneAndUpdate({ id }, { $set: { ...update, updatedAt: new Date() } }, { returnDocument: 'after' });
+    return result ? ({ ...result, id: result.id } as Warehouse) : undefined;
+  }
+  async deleteWarehouse(id: number): Promise<boolean> {
+    return (await this.collections.warehouses.deleteOne({ id })).deletedCount > 0;
+  }
+
+  // Stock Locations
+  async getAllStockLocations(companyId?: number): Promise<StockLocation[]> {
+    const docs = await this.collections.stockLocations.find(companyId ? { companyId } : {}).toArray();
+    return this.mapDocs<StockLocation>(docs);
+  }
+  async getStockLocation(id: number): Promise<StockLocation | undefined> {
+    const doc = await this.collections.stockLocations.findOne({ id });
+    return doc ? ({ ...doc, id: doc.id } as StockLocation) : undefined;
+  }
+  async createStockLocation(l: InsertStockLocation): Promise<StockLocation> {
+    const id = await this.getNextSequenceValue('stockLocations');
+    const doc = { ...l, id, isActive: l.isActive ?? true, type: l.type ?? 'internal', createdAt: new Date() };
+    await this.collections.stockLocations.insertOne(doc);
+    return doc as StockLocation;
+  }
+  async updateStockLocation(id: number, update: Partial<InsertStockLocation>): Promise<StockLocation | undefined> {
+    const result = await this.collections.stockLocations.findOneAndUpdate({ id }, { $set: { ...update, updatedAt: new Date() } }, { returnDocument: 'after' });
+    return result ? ({ ...result, id: result.id } as StockLocation) : undefined;
+  }
+  async deleteStockLocation(id: number): Promise<boolean> {
+    return (await this.collections.stockLocations.deleteOne({ id })).deletedCount > 0;
+  }
+
+  // Stock Quants
+  async getAllStockQuants(companyId?: number): Promise<StockQuant[]> {
+    const docs = await this.collections.stockQuants.find(companyId ? { companyId } : {}).toArray();
+    return this.mapDocs<StockQuant>(docs);
+  }
+  async adjustStockQuant(companyId: number | null | undefined, itemId: string, locationId: number, delta: number): Promise<StockQuant> {
+    const existing = await this.collections.stockQuants.findOne({ itemId, locationId });
+    if (existing) {
+      const newQty = (Number(existing.quantity) || 0) + delta;
+      await this.collections.stockQuants.updateOne({ id: existing.id }, { $set: { quantity: String(newQty), updatedAt: new Date() } });
+      return { ...existing, quantity: String(newQty), id: existing.id } as StockQuant;
+    }
+    const id = await this.getNextSequenceValue('stockQuants');
+    const doc = { id, companyId: companyId ?? null, itemId, locationId, quantity: String(delta), updatedAt: new Date() };
+    await this.collections.stockQuants.insertOne(doc);
+    return doc as StockQuant;
+  }
+
+  private async applyStockMove(move: StockMove): Promise<void> {
+    const qty = Number(move.quantity) || 0;
+    if (qty <= 0) return;
+    const fromLoc = move.fromLocationId ? await this.getStockLocation(move.fromLocationId) : undefined;
+    const toLoc = move.toLocationId ? await this.getStockLocation(move.toLocationId) : undefined;
+    const fromInternal = fromLoc?.type === 'internal';
+    const toInternal = toLoc?.type === 'internal';
+    if (fromInternal && move.fromLocationId) await this.adjustStockQuant(move.companyId, move.itemId, move.fromLocationId, -qty);
+    if (toInternal && move.toLocationId) await this.adjustStockQuant(move.companyId, move.itemId, move.toLocationId, qty);
+    const globalDelta = (toInternal ? qty : 0) - (fromInternal ? qty : 0);
+    if (globalDelta !== 0) {
+      // Update the inventory item's global quantity directly by ObjectId.
+      // (getInventoryItem/updateInventoryItem rely on a stubbed convertToObjectId that throws.)
+      try {
+        const oid = new ObjectId(String(move.itemId));
+        const item = await this.collections.inventory.findOne({ _id: oid });
+        if (item) {
+          await this.collections.inventory.updateOne({ _id: oid }, { $set: { quantity: (Number(item.quantity) || 0) + globalDelta, updatedAt: new Date() } });
+        }
+      } catch { /* itemId not a valid ObjectId or item missing — quant ledger is still authoritative */ }
+    }
+  }
+
+  // Stock Moves
+  async getAllStockMoves(companyId?: number): Promise<StockMove[]> {
+    const docs = await this.collections.stockMoves.find(companyId ? { companyId } : {}).sort({ createdAt: -1 }).toArray();
+    return this.mapDocs<StockMove>(docs);
+  }
+  async createStockMove(m: InsertStockMove): Promise<StockMove> {
+    const id = await this.getNextSequenceValue('stockMoves');
+    const doc = { ...m, id, status: m.status ?? 'done', type: m.type ?? 'internal', createdAt: new Date() } as any;
+    await this.collections.stockMoves.insertOne(doc);
+    if (doc.status === 'done') await this.applyStockMove(doc as StockMove);
+    return doc as StockMove;
+  }
+  async deleteStockMove(id: number): Promise<boolean> {
+    return (await this.collections.stockMoves.deleteOne({ id })).deletedCount > 0;
+  }
+
+  // Stock Transfers
+  async getAllStockTransfers(companyId?: number): Promise<StockTransfer[]> {
+    const docs = await this.collections.stockTransfers.find(companyId ? { companyId } : {}).sort({ createdAt: -1 }).toArray();
+    return this.mapDocs<StockTransfer>(docs);
+  }
+  async getStockTransfer(id: number): Promise<StockTransfer | undefined> {
+    const doc = await this.collections.stockTransfers.findOne({ id });
+    return doc ? ({ ...doc, id: doc.id } as StockTransfer) : undefined;
+  }
+  async createStockTransfer(t: InsertStockTransfer): Promise<StockTransfer> {
+    const id = await this.getNextSequenceValue('stockTransfers');
+    const doc = { ...t, id, status: t.status ?? 'draft', type: t.type ?? 'internal', createdAt: new Date() };
+    await this.collections.stockTransfers.insertOne(doc);
+    return doc as StockTransfer;
+  }
+  async updateStockTransfer(id: number, update: Partial<InsertStockTransfer>): Promise<StockTransfer | undefined> {
+    const result = await this.collections.stockTransfers.findOneAndUpdate({ id }, { $set: { ...update, updatedAt: new Date() } }, { returnDocument: 'after' });
+    return result ? ({ ...result, id: result.id } as StockTransfer) : undefined;
+  }
+  async deleteStockTransfer(id: number): Promise<boolean> {
+    return (await this.collections.stockTransfers.deleteOne({ id })).deletedCount > 0;
+  }
+  async validateStockTransfer(id: number): Promise<StockTransfer | undefined> {
+    const transfer = await this.getStockTransfer(id);
+    if (!transfer) return undefined;
+    if (transfer.status === 'done') return transfer;
+    const lines: any[] = Array.isArray(transfer.items) ? transfer.items as any[] : [];
+    for (const line of lines) {
+      const itemId = line.itemId != null ? String(line.itemId) : "";
+      const quantity = Number(line.quantity) || 0;
+      if (!itemId || quantity <= 0) continue;
+      await this.createStockMove({
+        companyId: transfer.companyId,
+        transferId: id,
+        itemId,
+        fromLocationId: transfer.fromLocationId ?? null,
+        toLocationId: transfer.toLocationId ?? null,
+        quantity: String(quantity),
+        type: transfer.type,
+        reference: transfer.reference,
+        date: transfer.scheduledDate ?? new Date().toISOString().slice(0, 10),
+        status: 'done',
+      } as any);
+    }
+    await this.collections.stockTransfers.updateOne({ id }, { $set: { status: 'done', updatedAt: new Date() } });
+    return { ...transfer, status: 'done' } as StockTransfer;
+  }
+
+  // Reorder Rules
+  async getAllReorderRules(companyId?: number): Promise<ReorderRule[]> {
+    const docs = await this.collections.reorderRules.find(companyId ? { companyId } : {}).toArray();
+    return this.mapDocs<ReorderRule>(docs);
+  }
+  async createReorderRule(r: InsertReorderRule): Promise<ReorderRule> {
+    const id = await this.getNextSequenceValue('reorderRules');
+    const doc = { ...r, id, isActive: r.isActive ?? true, createdAt: new Date() };
+    await this.collections.reorderRules.insertOne(doc);
+    return doc as ReorderRule;
+  }
+  async updateReorderRule(id: number, update: Partial<InsertReorderRule>): Promise<ReorderRule | undefined> {
+    const result = await this.collections.reorderRules.findOneAndUpdate({ id }, { $set: { ...update, updatedAt: new Date() } }, { returnDocument: 'after' });
+    return result ? ({ ...result, id: result.id } as ReorderRule) : undefined;
+  }
+  async deleteReorderRule(id: number): Promise<boolean> {
+    return (await this.collections.reorderRules.deleteOne({ id })).deletedCount > 0;
   }
 
   // Lead Discussion operations
@@ -1254,6 +1769,18 @@ export class MongoDBStorage implements IStorage {
                 : existingSettings?.integrations?.indiaMart
             }
           : existingSettings?.integrations,
+        // Merge moduleSettings per-module so saving one module doesn't clobber others
+        moduleSettings: settings.moduleSettings
+          ? {
+              ...(existingSettings?.moduleSettings || {}),
+              ...Object.fromEntries(
+                Object.entries(settings.moduleSettings).map(([k, v]) => [
+                  k,
+                  { ...((existingSettings?.moduleSettings as any)?.[k] || {}), ...(v as any) }
+                ])
+              )
+            }
+          : existingSettings?.moduleSettings,
         updatedAt: new Date()
       };
       
@@ -1290,5 +1817,103 @@ export class MongoDBStorage implements IStorage {
       console.error('Error updating company settings:', error);
       throw error;
     }
+  }
+
+  // ── Manufacturing (new stubs) ───────────────────────────────────────────
+  private _wc: Map<number, any> = new Map(); private _wcId = 1;
+  private _boms: Map<number, any> = new Map(); private _bomId = 1;
+  private _bomLines: Map<number, any> = new Map(); private _bomLineId = 1;
+  private _po: Map<number, any> = new Map(); private _poId = 1;
+  async getAllWorkCentres(cId?: number) { const a = Array.from(this._wc.values()); return cId ? a.filter((x: any) => x.companyId === cId) : a; }
+  async createWorkCentre(w: any) { const id = this._wcId++; const r = { id, createdAt: new Date(), ...w }; this._wc.set(id, r); return r; }
+  async updateWorkCentre(id: number, w: any) { const e = this._wc.get(id); if (!e) return undefined; const u = { ...e, ...w }; this._wc.set(id, u); return u; }
+  async deleteWorkCentre(id: number) { return this._wc.delete(id); }
+  async getAllBoms(cId?: number) { const a = Array.from(this._boms.values()); return cId ? a.filter((x: any) => x.companyId === cId) : a; }
+  async getBom(id: number) { return this._boms.get(id); }
+  async createBom(b: any) { const id = this._bomId++; const r = { id, createdAt: new Date(), ...b }; this._boms.set(id, r); return r; }
+  async updateBom(id: number, b: any) { const e = this._boms.get(id); if (!e) return undefined; const u = { ...e, ...b }; this._boms.set(id, u); return u; }
+  async deleteBom(id: number) { return this._boms.delete(id); }
+  async getAllBomLines(bomId: number) { return Array.from(this._bomLines.values()).filter((l: any) => l.bomId === bomId); }
+  async createBomLine(l: any) { const id = this._bomLineId++; const r = { id, ...l }; this._bomLines.set(id, r); return r; }
+  async updateBomLine(id: number, l: any) { const e = this._bomLines.get(id); if (!e) return undefined; const u = { ...e, ...l }; this._bomLines.set(id, u); return u; }
+  async deleteBomLine(id: number) { return this._bomLines.delete(id); }
+  async getAllProductionOrders(cId?: number) { const a = Array.from(this._po.values()); return cId ? a.filter((x: any) => x.companyId === cId) : a; }
+  async getProductionOrder(id: number) { return this._po.get(id); }
+  async createProductionOrder(o: any) { const id = this._poId++; const r = { id, createdAt: new Date(), status: 'draft', ...o }; this._po.set(id, r); return r; }
+  async updateProductionOrder(id: number, o: any) { const e = this._po.get(id); if (!e) return undefined; const u = { ...e, ...o }; this._po.set(id, u); return u; }
+  async deleteProductionOrder(id: number) { return this._po.delete(id); }
+  async confirmProductionOrder(id: number) { return this.updateProductionOrder(id, { status: 'confirmed' }); }
+
+  // ── Purchasing (new stubs) ───────────────────────────────────────────────
+  private _rfqs: Map<number, any> = new Map(); private _rfqId = 1;
+  private _grns: Map<number, any> = new Map(); private _grnId = 1;
+  async getAllRfqs(cId?: number) { const a = Array.from(this._rfqs.values()); return cId ? a.filter((x: any) => x.companyId === cId) : a; }
+  async getRfq(id: number) { return this._rfqs.get(id); }
+  async createRfq(r: any) { const id = this._rfqId++; const rec = { id, createdAt: new Date(), status: 'draft', ...r }; this._rfqs.set(id, rec); return rec; }
+  async updateRfq(id: number, r: any) { const e = this._rfqs.get(id); if (!e) return undefined; const u = { ...e, ...r }; this._rfqs.set(id, u); return u; }
+  async deleteRfq(id: number) { return this._rfqs.delete(id); }
+  async getAllGrns(cId?: number) { const a = Array.from(this._grns.values()); return cId ? a.filter((x: any) => x.companyId === cId) : a; }
+  async getGrn(id: number) { return this._grns.get(id); }
+  async createGrn(g: any) { const id = this._grnId++; const rec = { id, createdAt: new Date(), status: 'draft', ...g }; this._grns.set(id, rec); return rec; }
+  async updateGrn(id: number, g: any) { const e = this._grns.get(id); if (!e) return undefined; const u = { ...e, ...g }; this._grns.set(id, u); return u; }
+  async deleteGrn(id: number) { return this._grns.delete(id); }
+  async validateGrn(id: number) { return this.updateGrn(id, { status: 'validated' }); }
+
+  // ── Sales (new stubs) ────────────────────────────────────────────────────
+  private _dos: Map<number, any> = new Map(); private _doId = 1;
+  private _pls: Map<number, any> = new Map(); private _plId = 1;
+  async getAllDeliveryOrders(cId?: number) { const a = Array.from(this._dos.values()); return cId ? a.filter((x: any) => x.companyId === cId) : a; }
+  async getDeliveryOrder(id: number) { return this._dos.get(id); }
+  async createDeliveryOrder(d: any) { const id = this._doId++; const r = { id, createdAt: new Date(), status: 'draft', ...d }; this._dos.set(id, r); return r; }
+  async updateDeliveryOrder(id: number, d: any) { const e = this._dos.get(id); if (!e) return undefined; const u = { ...e, ...d }; this._dos.set(id, u); return u; }
+  async deleteDeliveryOrder(id: number) { return this._dos.delete(id); }
+  async validateDeliveryOrder(id: number) { return this.updateDeliveryOrder(id, { status: 'done' }); }
+  async getAllPriceLists(cId?: number) { const a = Array.from(this._pls.values()); return cId ? a.filter((x: any) => x.companyId === cId) : a; }
+  async createPriceList(p: any) { const id = this._plId++; const r = { id, createdAt: new Date(), ...p }; this._pls.set(id, r); return r; }
+  async updatePriceList(id: number, p: any) { const e = this._pls.get(id); if (!e) return undefined; const u = { ...e, ...p }; this._pls.set(id, u); return u; }
+  async deletePriceList(id: number) { return this._pls.delete(id); }
+
+  // ── HR (new stubs) ───────────────────────────────────────────────────────
+  private _appr: Map<number, any> = new Map(); private _apprId = 1;
+  private _exp: Map<number, any> = new Map(); private _expId = 1;
+  private _jp: Map<number, any> = new Map(); private _jpId = 1;
+  private _ja: Map<number, any> = new Map(); private _jaId = 1;
+  async getAllAppraisals(cId?: number) { const a = Array.from(this._appr.values()); return cId ? a.filter((x: any) => x.companyId === cId) : a; }
+  async getAppraisal(id: number) { return this._appr.get(id); }
+  async createAppraisal(a: any) { const id = this._apprId++; const r = { id, createdAt: new Date(), status: 'draft', ...a }; this._appr.set(id, r); return r; }
+  async updateAppraisal(id: number, a: any) { const e = this._appr.get(id); if (!e) return undefined; const u = { ...e, ...a }; this._appr.set(id, u); return u; }
+  async deleteAppraisal(id: number) { return this._appr.delete(id); }
+  async getAllExpenseClaims(cId?: number) { const a = Array.from(this._exp.values()); return cId ? a.filter((x: any) => x.companyId === cId) : a; }
+  async getExpenseClaim(id: number) { return this._exp.get(id); }
+  async createExpenseClaim(e: any) { const id = this._expId++; const r = { id, createdAt: new Date(), status: 'draft', ...e }; this._exp.set(id, r); return r; }
+  async updateExpenseClaim(id: number, e: any) { const ex = this._exp.get(id); if (!ex) return undefined; const u = { ...ex, ...e }; this._exp.set(id, u); return u; }
+  async deleteExpenseClaim(id: number) { return this._exp.delete(id); }
+  async getAllJobPositions(cId?: number) { const a = Array.from(this._jp.values()); return cId ? a.filter((x: any) => x.companyId === cId) : a; }
+  async createJobPosition(p: any) { const id = this._jpId++; const r = { id, createdAt: new Date(), ...p }; this._jp.set(id, r); return r; }
+  async updateJobPosition(id: number, p: any) { const e = this._jp.get(id); if (!e) return undefined; const u = { ...e, ...p }; this._jp.set(id, u); return u; }
+  async deleteJobPosition(id: number) { return this._jp.delete(id); }
+  async getAllJobApplications(cId?: number) { const a = Array.from(this._ja.values()); return cId ? a.filter((x: any) => x.companyId === cId) : a; }
+  async getJobApplication(id: number) { return this._ja.get(id); }
+  async createJobApplication(a: any) { const id = this._jaId++; const r = { id, createdAt: new Date(), stage: 'new', ...a }; this._ja.set(id, r); return r; }
+  async updateJobApplication(id: number, a: any) { const e = this._ja.get(id); if (!e) return undefined; const u = { ...e, ...a }; this._ja.set(id, u); return u; }
+  async deleteJobApplication(id: number) { return this._ja.delete(id); }
+
+  // ── Finance (new stubs) ──────────────────────────────────────────────────
+  private _accs: Map<number, any> = new Map(); private _accId = 1;
+  private _jes: Map<number, any> = new Map(); private _jeId = 1;
+  async getAllAccounts(cId?: number) { const a = Array.from(this._accs.values()); return cId ? a.filter((x: any) => x.companyId === cId) : a; }
+  async createAccount(a: any) { const id = this._accId++; const r = { id, createdAt: new Date(), currentBalance: a.openingBalance ?? 0, isActive: true, ...a }; this._accs.set(id, r); return r; }
+  async updateAccount(id: number, a: any) { const e = this._accs.get(id); if (!e) return undefined; const u = { ...e, ...a }; this._accs.set(id, u); return u; }
+  async deleteAccount(id: number) { return this._accs.delete(id); }
+  async getAllJournalEntries(cId?: number) { const a = Array.from(this._jes.values()); return cId ? a.filter((x: any) => x.companyId === cId) : a; }
+  async getJournalEntry(id: number) { return this._jes.get(id); }
+  async createJournalEntry(e: any) { const id = this._jeId++; const r = { id, createdAt: new Date(), status: 'draft', ...e }; this._jes.set(id, r); return r; }
+  async updateJournalEntry(id: number, e: any) { const ex = this._jes.get(id); if (!ex) return undefined; const u = { ...ex, ...e }; this._jes.set(id, u); return u; }
+  async deleteJournalEntry(id: number) { return this._jes.delete(id); }
+  async postJournalEntry(id: number) { return this.updateJournalEntry(id, { status: 'posted' }); }
+  async getFinancialSummary(cId?: number) {
+    const accs = await this.getAllAccounts(cId);
+    const sum = (type: string) => accs.filter((a: any) => a.type === type).reduce((s: number, a: any) => s + (parseFloat(a.currentBalance) || 0), 0);
+    return { assets: sum('assets'), liabilities: sum('liabilities'), equity: sum('equity'), income: sum('income'), expense: sum('expense') };
   }
 }

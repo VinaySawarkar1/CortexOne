@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Edit, Trash } from "lucide-react";
+import { MoreHorizontal, Edit, Trash, PackagePlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -22,10 +22,11 @@ interface InventoryTableProps {
   items: Inventory[];
   onEdit: (item: Inventory) => void;
   onDelete: (id: number) => void;
+  onAdjust?: (item: Inventory) => void;
   isLoading?: boolean;
 }
 
-export default function InventoryTable({ items, onEdit, onDelete, isLoading = false }: InventoryTableProps) {
+export default function InventoryTable({ items, onEdit, onDelete, onAdjust, isLoading = false }: InventoryTableProps) {
   // Format currency
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -117,6 +118,12 @@ export default function InventoryTable({ items, onEdit, onDelete, isLoading = fa
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        {onAdjust && (
+                          <DropdownMenuItem onClick={() => onAdjust(item)}>
+                            <PackagePlus className="mr-2 h-4 w-4" />
+                            Adjust Stock
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem onClick={() => onEdit(item)}>
                           <Edit className="mr-2 h-4 w-4" />
                           Edit

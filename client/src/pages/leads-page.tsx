@@ -36,10 +36,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import OrderForm from "@/components/orders/order-form";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, User } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
 import ExcelImportExport from "@/components/common/ExcelImportExport";
 
 export default function LeadsPage() {
@@ -336,131 +334,70 @@ export default function LeadsPage() {
 
   return (
     <Layout>
-      <div className="py-6 px-4 sm:px-6 lg:px-8">
-        <PageHeader
-          title="Lead Management"
-          subtitle="Manage and track potential client leads"
-        />
-
-        {/* Search, Import/Export and Add */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-          <div className="w-full sm:w-auto mb-4 sm:mb-0">
-            <div className="flex gap-3">
-              <Input
-                className="max-w-xs"
-                placeholder="Search leads..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <select
-                value={timeFilter}
-                onChange={(e) => { setTimeFilter(e.target.value); setPage(1); }}
-                className="h-10 border rounded px-2 text-sm"
-              >
-                <option value="all">All time</option>
-                <option value="day">Today</option>
-                <option value="week">This week</option>
-                <option value="month">This month</option>
-                <option value="quarter">This quarter</option>
-                <option value="year">This year</option>
-              </select>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <ExcelImportExport entity="leads" />
-            <Button 
-              onClick={() => setCreateDialogOpen(true)}
-              className="bg-[#800000] hover:bg-[#4B0000]"
+      {/* PageHeader MUST be the first child of Layout — never wrapped in a padding div */}
+      <PageHeader
+        title="Lead Management"
+        subtitle="Manage and track potential client leads"
+        badge={{ label: `${filteredLeads?.length ?? 0} leads` }}
+        actions={
+          <div className="flex items-center gap-2">
+            <Input
+              className="h-8 w-44 text-xs"
+              placeholder="Search leads…"
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+            />
+            <select
+              value={timeFilter}
+              onChange={(e) => { setTimeFilter(e.target.value); setPage(1); }}
+              className="h-8 border border-slate-200 rounded-lg px-2 text-xs bg-white text-slate-700 focus:outline-none focus:border-indigo-400"
             >
-              <Plus className="mr-2 h-4 w-4" />
-              Add New Lead
+              <option value="all">All time</option>
+              <option value="day">Today</option>
+              <option value="week">This week</option>
+              <option value="month">This month</option>
+              <option value="quarter">This quarter</option>
+              <option value="year">This year</option>
+            </select>
+            <Select value={selectedCategory} onValueChange={(v) => { setSelectedCategory(v); setPage(1); }}>
+              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Category" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {Object.entries(categoryLabels).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>{label as string}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedSource} onValueChange={(v) => { setSelectedSource(v); setPage(1); }}>
+              <SelectTrigger className="h-8 w-32 text-xs"><SelectValue placeholder="Source" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sources</SelectItem>
+                {Object.entries(sourceLabels).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>{label as string}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <ExcelImportExport entity="leads" />
+            <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setCategoryManagerOpen(true)}>Categories</Button>
+            <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setSourceManagerOpen(true)}>Sources</Button>
+            <Button
+              size="sm"
+              className="h-8 text-xs font-semibold rounded-lg shadow-sm border-0"
+              style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}
+              onClick={() => setCreateDialogOpen(true)}
+            >
+              <Plus className="h-3.5 w-3.5 mr-1" />Add Lead
             </Button>
-            <Button variant="outline" onClick={() => setCategoryManagerOpen(true)}>Manage Categories</Button>
-            <Button variant="outline" onClick={() => setSourceManagerOpen(true)}>Manage Sources</Button>
           </div>
-        </div>
+        }
+      />
 
-        {/* Category and Source Filters - Dropdown style */}
-        <div className="mb-6 flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <Label htmlFor="category-filter" className="text-sm font-medium mb-2 block">
-              Filter by Category
-              {selectedCategory !== "all" && (
-                <span className="ml-2 text-xs text-gray-500">
-                  ({categoryCounts[selectedCategory] || 0} leads)
-                </span>
-              )}
-            </Label>
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger id="category-filter" className="w-full">
-                <SelectValue placeholder="Select category">
-                  {selectedCategory === "all" 
-                    ? `All Leads`
-                    : categoryLabels[selectedCategory] || 'All Leads'
-                  }
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">
-                  <div className="flex items-center justify-between w-full">
-                    <span>All Leads</span>
-                    <Badge variant="outline" className="ml-2 bg-gray-100">{categoryCounts.all || 0}</Badge>
-                  </div>
-                </SelectItem>
-                {Object.keys(categoryLabels || {}).length > 0 && Object.entries(categoryLabels).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    <div className="flex items-center justify-between w-full">
-                      <span>{label}</span>
-                      <Badge variant="outline" className="ml-2 bg-gray-100">{categoryCounts[value] || 0}</Badge>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex-1">
-            <Label htmlFor="source-filter" className="text-sm font-medium mb-2 block">
-              Filter by Source
-              {selectedSource !== "all" && (
-                <span className="ml-2 text-xs text-gray-500">
-                  ({sourceCounts[selectedSource] || 0} leads)
-                </span>
-              )}
-            </Label>
-            <Select value={selectedSource} onValueChange={setSelectedSource}>
-              <SelectTrigger id="source-filter" className="w-full">
-                <SelectValue placeholder="Select source">
-                  {selectedSource === "all"
-                    ? `All Sources`
-                    : sourceLabels[selectedSource] || 'All Sources'
-                  }
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">
-                  <div className="flex items-center justify-between w-full">
-                    <span>All Sources</span>
-                    <Badge variant="outline" className="ml-2 bg-gray-100">{sourceCounts.all || 0}</Badge>
-                  </div>
-                </SelectItem>
-                {Object.keys(sourceLabels || {}).length > 0 && Object.entries(sourceLabels).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    <div className="flex items-center justify-between w-full">
-                      <span>{label}</span>
-                      <Badge variant="outline" className="ml-2 bg-gray-100">{sourceCounts[value] || 0}</Badge>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
+      {/* Page body */}
+      <div className="p-6 space-y-4">
         {/* Leads Content */}
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin text-[#800000]" />
+            <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
           </div>
         ) : error ? (
           <div className="text-center py-8">
@@ -478,25 +415,32 @@ export default function LeadsPage() {
             onConvertToCustomer={handleConvertToCustomer}
           />
         ) : (
-          <div className="text-center py-12 border rounded-md bg-gray-50">
-            <p className="text-gray-500">No leads found. Add a new lead to get started.</p>
-            <Button 
+          <div className="text-center py-16 bg-white rounded-xl border border-slate-100 shadow-sm">
+            <div className="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-3">
+              <User className="h-6 w-6 text-indigo-400" />
+            </div>
+            <p className="text-sm font-medium text-slate-600 mb-1">No leads found</p>
+            <p className="text-xs text-slate-400 mb-4">Add your first lead to get started</p>
+            <Button
+              size="sm"
+              className="h-8 text-xs font-semibold border-0"
+              style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}
               onClick={() => setCreateDialogOpen(true)}
-              className="mt-4 bg-[#800000] hover:bg-[#4B0000]"
             >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Lead
+              <Plus className="h-3.5 w-3.5 mr-1" />Add Lead
             </Button>
           </div>
         )}
 
         {/* Pagination */}
-        {filteredLeads && filteredLeads.length > 0 && (
-          <div className="flex items-center justify-between mt-4">
-            <div className="text-sm text-gray-600">Showing {(page-1)*pageSize + 1} - {Math.min(page*pageSize, filteredLeads.length)} of {filteredLeads.length}</div>
-            <div className="flex gap-2">
-              <Button variant="outline" disabled={page === 1} onClick={() => setPage(p => Math.max(1, p-1))}>Prev</Button>
-              <Button variant="outline" disabled={page*pageSize >= filteredLeads.length} onClick={() => setPage(p => p+1)}>Next</Button>
+        {filteredLeads && filteredLeads.length > pageSize && (
+          <div className="flex items-center justify-between pt-1">
+            <div className="text-xs text-slate-400">
+              Showing {(page-1)*pageSize + 1}–{Math.min(page*pageSize, filteredLeads.length)} of {filteredLeads.length}
+            </div>
+            <div className="flex gap-1.5">
+              <Button variant="outline" size="sm" className="h-7 text-xs" disabled={page === 1} onClick={() => setPage(p => Math.max(1, p-1))}>Prev</Button>
+              <Button variant="outline" size="sm" className="h-7 text-xs" disabled={page*pageSize >= filteredLeads.length} onClick={() => setPage(p => p+1)}>Next</Button>
             </div>
           </div>
         )}

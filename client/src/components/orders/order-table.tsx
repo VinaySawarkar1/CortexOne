@@ -16,15 +16,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  MoreHorizontal, 
-  Edit, 
-  Trash, 
-  Eye, 
-  Receipt, 
-  Truck, 
+import {
+  MoreHorizontal,
+  Edit,
+  Trash,
+  Eye,
+  Receipt,
+  Truck,
   Printer,
-  Download
+  Download,
+  CheckCircle2
 } from "lucide-react";
 
 interface OrderTableProps {
@@ -35,6 +36,7 @@ interface OrderTableProps {
   onPrintInternalOrder: (order: Order) => void;
   onGenerateInvoice: (order: Order) => void;
   onGenerateDeliveryChallan: (order: Order) => void;
+  onConfirm?: (order: Order) => void;
   isLoading?: boolean;
 }
 
@@ -46,6 +48,7 @@ export default function OrderTable({
   onPrintInternalOrder,
   onGenerateInvoice,
   onGenerateDeliveryChallan,
+  onConfirm,
   isLoading = false,
 }: OrderTableProps) {
   const formatDate = (dateString: Date) => {
@@ -178,6 +181,12 @@ export default function OrderTable({
                         <Edit className="mr-2 h-4 w-4" />
                         Edit Order
                       </DropdownMenuItem>
+                      {onConfirm && (order.status === 'processing' || order.status === 'pending') && (
+                        <DropdownMenuItem onClick={() => onConfirm(order)} className="cursor-pointer text-blue-600">
+                          <CheckCircle2 className="mr-2 h-4 w-4" />
+                          Confirm Order
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem onClick={() => onPrintInternalOrder(order)} className="cursor-pointer">
                         <Printer className="mr-2 h-4 w-4" />
                         Print Internal Order

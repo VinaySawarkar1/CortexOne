@@ -72,7 +72,7 @@ export default function AuthPage() {
   // If user is already logged in, redirect to home
   useEffect(() => {
     if (user) {
-      setLocation("/");
+      setLocation("/apps");
     }
   }, [user, setLocation]);
 

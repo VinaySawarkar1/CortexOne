@@ -62,6 +62,17 @@ async function ensureDataDir() {
   }
 }
 
+// Ensure parent directory for a specific file path exists (useful for Render writable FS)
+async function ensureParentDir(filePath: string) {
+  const dir = path.dirname(filePath);
+  try {
+    await fs.mkdir(dir, { recursive: true });
+  } catch (error) {
+    console.error('Error creating parent dir for', filePath, error);
+  }
+}
+
+
 
 // Create file paths for each data type
 const USER_FILE = path.join(DATA_DIR, 'users.json');
@@ -668,6 +679,11 @@ export class JSONFileStorage implements IStorage {
   // Helper to load all data from JSON files
   private async loadData() {
     await ensureDataDir();
+
+    // Ensure directory exists for any file-based JSON data (some entities use relative "data/..." paths)
+    await ensureParentDir(LEAD_CATEGORY_FILE);
+
+
     await this.loadCompanies();
     await this.loadUsers();
     await this.loadCustomers();

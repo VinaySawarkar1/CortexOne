@@ -1,0 +1,92 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: business_ai
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d business_ai"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/business_ai
+      SESSION_SECRET: test-session-secret
+      PORT: 10000
+      HOST: 0.0.0.0
+      NODE_ENV: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+
+
+      - name: Build
+        run: npm run build
+
+
+      - name: Docker Build
+        run: |
+          docker build -t reckonix-crm:${{ github.sha }} .
+
+      # Prisma hooks (only run if prisma folder exists)
+      - name: Prisma generate (optional)
+        if: ${{ hashFiles('prisma/schema.prisma') != '' }}
+        run: |
+          npx prisma generate
+
+      - name: Prisma migrate deploy (optional)
+        if: ${{ hashFiles('prisma/schema.prisma') != '' }}
+        run: |
+          npx prisma migrate deploy
+
+  cd-render:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: ci
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Docker Build
+        run: |
+          docker build -t reckonix-crm:${{ github.sha }} .
+
+      # Render deploy trigger (manual integration required on your Render side)
+      # Recommended: configure Render to build from Dockerfile in Git repo.
+      # This step optionally triggers an external webhook if you add RENDER_WEBHOOK_URL.
+      - name: Trigger Render Webhook (optional)
+        if: ${{ secrets.RENDER_WEBHOOK_URL != '' }}
+        run: |
+          curl -X POST -H "Content-Type: application/json" "${{ secrets.RENDER_WEBHOOK_URL }}" \
+            -d '{"sha":"${{ github.sha }}"}'
+

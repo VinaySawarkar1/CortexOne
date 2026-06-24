@@ -49,7 +49,9 @@ import { Store as SessionStore } from "express-session";
 const MemoryStore = createMemoryStore(session);
 
 // Directory for JSON storage
-const DATA_DIR = path.join(process.cwd(), 'data');
+// Render/containers may not allow writing into app root (EACCES for /app/data).
+// Use a writable dir if provided, otherwise fall back to a relative ./data (works with most buildpacks).
+const DATA_DIR = path.resolve(process.env.DATA_DIR || process.cwd(), 'data');
 
 // Ensure data directory exists
 async function ensureDataDir() {
@@ -59,6 +61,7 @@ async function ensureDataDir() {
     console.error('Error creating data directory:', error);
   }
 }
+
 
 // Create file paths for each data type
 const USER_FILE = path.join(DATA_DIR, 'users.json');

@@ -51,7 +51,11 @@ const MemoryStore = createMemoryStore(session);
 // Directory for JSON storage
 // Render/containers may not allow writing into app root (EACCES for /app/data).
 // Use a writable dir if provided, otherwise fall back to a relative ./data (works with most buildpacks).
-const DATA_DIR = path.resolve(process.env.DATA_DIR || process.cwd(), 'data');
+const DATA_DIR = path.resolve(
+  process.env.DATA_DIR || process.cwd(),
+  process.env.DATA_DIR ? '' : 'data'
+);
+
 
 // Ensure data directory exists
 async function ensureDataDir() {

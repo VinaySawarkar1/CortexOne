@@ -17,7 +17,7 @@ services:
       - key: USE_MONGODB
         value: true
       - key: DATA_DIR
-        value: /opt/render/data
+        value: /tmp/data
 
       - key: MONGODB_URI
         sync: false
